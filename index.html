@@ -10,8 +10,19 @@
 <meta name="apple-mobile-web-app-title" content="Service Bridge">
 <script>
   if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./service-worker.js');
+    window.addEventListener('load', async () => {
+      const reg = await navigator.serviceWorker.register('./service-worker.js');
+      // Vérifie une mise à jour toutes les 30 secondes
+      setInterval(() => reg.update(), 30000);
+      // Recharge la page dès qu'une nouvelle version est prête
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing;
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'activated') {
+            window.location.reload();
+          }
+        });
+      });
     });
   }
 </script>
