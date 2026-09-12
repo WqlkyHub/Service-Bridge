@@ -1260,6 +1260,8 @@ function settingsSheet(){
       '<button class="btn" id="sUpdate">'+ic('undo')+'Mettre à jour l’app</button></div>' +
       '<p class="tiny" style="margin-top:8px">Récupère la dernière version depuis GitHub, sans rien retélécharger.</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+      '<button class="btn" id="baremeBtn">Appliquer le barème suggéré</button></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
       '<button class="btn" id="sExport">Exporter</button>' +
       '<button class="btn" id="sImport">Importer</button>' +
       '<button class="btn dg" id="sReset">Tout effacer</button></div>');
@@ -1339,7 +1341,11 @@ function applyBareme(){
     ops.push({op:'put', coll:'challenges', obj:o});
   });
   applyOps(ops);
-  toast(n ? n+' défis chiffrés — ajustez ce qui ne vous va pas' : 'Aucun défi à chiffrer');
+  if(n) return toast(n+' défis chiffrés — ajustez ce qui ne vous va pas');
+  var sansPts=S.challenges.filter(function(c){ return !hasPts(c); });
+  if(!S.challenges.length) toast('Aucun défi dans la soirée');
+  else if(!sansPts.length) toast('Tous vos défis sont déjà chiffrés');
+  else toast(sansPts.length+' défis sans points, mais aucun titre reconnu — chiffrez-les via ••• → Modifier');
 }
 function addPack(id){
   var pk=null; PACKS.forEach(function(p){ if(p.id===id) pk=p; });
