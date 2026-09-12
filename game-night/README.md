@@ -32,6 +32,23 @@ Au tout premier lancement, Windows demande d'autoriser Node.js sur le réseau :
 acceptez pour les **réseaux privés**, sinon les téléphones ne verront pas le
 serveur.
 
+### Mise à jour automatique
+
+À chaque démarrage, le serveur va chercher la dernière version des fichiers de
+l'app sur GitHub et l'installe : **il n'y a jamais besoin de retélécharger quoi
+que ce soit**. Sans connexion, il garde la version locale et le dit. Un fichier
+n'est réécrit que s'il diffère et qu'il passe un contrôle de taille et de
+contenu, pour qu'une coupure ou une page d'erreur ne puisse pas remplacer une
+version qui marche. La soirée en cours (`soiree.json`) n'est jamais touchée.
+
+Sans relancer le serveur, **Réglages → Mettre à jour l'app** fait la même chose
+et recharge la page. Si c'est `server.js` lui-même qui a changé, l'app le
+signale : il faut fermer et relancer la fenêtre du serveur.
+
+`NO_UPDATE=1 node server.js` désactive la mise à jour — à utiliser si vous
+modifiez les fichiers vous-même, sinon vos changements seront remplacés par la
+version du dépôt au prochain démarrage.
+
 Le serveur affiche les adresses à ouvrir, par exemple `http://192.168.1.20:8080`.
 Chacun ouvre cette adresse sur son téléphone : toute validation apparaît
 instantanément sur les autres appareils (Server-Sent Events). Aucune connexion
