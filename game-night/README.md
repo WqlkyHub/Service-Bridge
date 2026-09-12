@@ -81,6 +81,14 @@ Un défi a un objectif (`20`), une unité (`km`) et des points. Deux modes :
 
 Les bonus et malus manuels (menu d'un joueur) s'ajoutent hors défi.
 
+## Deux mises en page
+
+Sous 1080 px (téléphone, tablette) : une colonne, navigation fixée en bas du
+pouce. Au-delà : la page s'élargit à 1320 px, les catégories de défis se rangent
+en deux ou trois colonnes, les joueurs en fiches, et une colonne de droite
+collante garde le classement live et les dernières actions sous les yeux quel
+que soit l'onglet ouvert.
+
 ## Détails utiles
 
 - **Un défi n'appartient à personne.** Tout le monde peut contribuer au même défi,

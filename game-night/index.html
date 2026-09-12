@@ -199,7 +199,8 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 :root[data-theme="dark"] .tick,:root:not([data-theme="light"]) .tick{color:var(--on-accent)}
 
 /* joueurs */
-.prow{display:flex;align-items:center;gap:12px;padding:13px 15px;border-top:1px solid var(--line)}
+.prow{display:flex;flex-direction:column;align-items:stretch;gap:10px;padding:13px 15px;border-top:1px solid var(--line)}
+.pTop{display:flex;align-items:center;gap:12px}
 .prow:first-child{border-top:0}
 .prow .nm{font-weight:500}
 .prow .sub{font-family:var(--mono);font-size:11px;color:var(--text-3)}
@@ -307,6 +308,54 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .hr{height:1px;background:var(--line);margin:16px 0}
 .muted{color:var(--text-2);font-size:13.5px}
 .tiny{font-family:var(--mono);font-size:10.5px;color:var(--text-3);letter-spacing:.05em}
+
+/* ---------- mise en page bureau ---------- */
+.cols{display:grid;grid-template-columns:minmax(0,1fr)}
+.rail{display:none}
+.railCard{padding:14px 15px}
+.railCard+.railCard{margin-top:14px}
+.railT{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3);
+  padding-bottom:10px;border-bottom:1px solid var(--line)}
+.rr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;padding:9px 0 7px;border-bottom:1px solid var(--line)}
+.rr:last-child{border-bottom:0;padding-bottom:0}
+.rr .nm{font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rr .v{font-family:var(--mono);font-size:13px;letter-spacing:-.02em}
+.rr .bar{grid-column:1/-1;height:4px;border-radius:2px;background:var(--text-3);min-width:3px;margin-top:2px}
+.rr.lead .bar{background:var(--accent-2)}
+.rr .sub{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;color:var(--text-3);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+@media(min-width:1080px){
+  .app{max-width:1320px;padding-inline:28px}
+  header.hd{padding-block:26px 0}
+  h1{font-size:31px}
+  .hdBottom{display:flex;align-items:center;justify-content:space-between;gap:26px;margin-top:20px}
+  .kpis{flex:0 1 600px;margin-top:0}
+  .statusLine{padding:0;flex:0 0 auto}
+  nav.tabs{padding-top:22px}
+  .cols{grid-template-columns:minmax(0,1fr) 318px;gap:26px;align-items:start}
+  .rail{display:block;position:sticky;top:22px}
+  /* les catégories se rangent en colonnes au lieu de s'empiler */
+  .groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(400px,1fr));gap:20px;align-items:start}
+  .group{margin-bottom:0}
+  .catGrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px;align-items:start;
+    background:none;border:0;border-radius:0}
+  .catGrid .cat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r)}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:12px;
+    background:none;border:0;border-radius:0}
+  .pgrid .prow{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px 15px}
+  .row{padding:13px 16px}
+  .row .side{flex-direction:row;align-items:center;gap:14px}
+  .row .pts{min-width:52px;text-align:right}
+  .shead{padding-top:26px}
+  #pForm{max-width:430px}
+  .ev .t{max-width:520px}
+  .empty{padding:44px 24px}
+  .feed,.list{overflow:hidden}
+}
+@media(min-width:1400px){
+  .groups{grid-template-columns:repeat(auto-fill,minmax(430px,1fr))}
+}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
 
@@ -322,8 +371,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
         <button class="ib" id="gearBtn" aria-label="Réglages"></button>
       </div>
     </div>
-    <div class="kpis" id="kpis"></div>
-    <div class="statusLine" id="statusLine"><i></i><span>Local</span></div>
+    <div class="hdBottom">
+      <div class="kpis" id="kpis"></div>
+      <div class="statusLine" id="statusLine"><i></i><span>Local</span></div>
+    </div>
   </header>
 
   <nav class="tabs" role="tablist">
@@ -333,12 +384,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     <button role="tab" id="tab-stats" aria-controls="view-stats" aria-selected="false" data-view="stats">Stats</button>
   </nav>
 
-  <main>
-    <section class="view on" id="view-defis" role="tabpanel" aria-labelledby="tab-defis"></section>
-    <section class="view" id="view-joueurs" role="tabpanel" aria-labelledby="tab-joueurs"></section>
-    <section class="view" id="view-classement" role="tabpanel" aria-labelledby="tab-classement"></section>
-    <section class="view" id="view-stats" role="tabpanel" aria-labelledby="tab-stats"></section>
-  </main>
+  <div class="cols">
+    <main>
+      <section class="view on" id="view-defis" role="tabpanel" aria-labelledby="tab-defis"></section>
+      <section class="view" id="view-joueurs" role="tabpanel" aria-labelledby="tab-joueurs"></section>
+      <section class="view" id="view-classement" role="tabpanel" aria-labelledby="tab-classement"></section>
+      <section class="view" id="view-stats" role="tabpanel" aria-labelledby="tab-stats"></section>
+    </main>
+    <aside class="rail" id="rail" aria-label="Résumé de la soirée"></aside>
+  </div>
 </div>
 
 <div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1"></div></div>
@@ -635,6 +689,7 @@ function renderNow(){
   $('#meAva').className = 'ava' + (me ? ' on' : '');
   $('#meName').textContent = me ? me.name : 'Je suis…';
   if(!$('#gearBtn').firstChild) $('#gearBtn').innerHTML = ic('gear');
+  renderRail(sc);
   if(!dirty[curView]) return;
   dirty[curView]=false;
   if(curView==='defis') renderDefis(prog);
@@ -643,6 +698,37 @@ function renderNow(){
   else renderStats(sc);
 }
 function kpi(v,l){ return '<div class="kpi"><b>'+v+'</b><span>'+l+'</span></div>'; }
+
+// Colonne de droite sur grand écran : ce qu'on veut garder sous les yeux
+// pendant qu'on est dans une autre vue.
+function renderRail(sc){
+  var el=$('#rail'); if(!el) return;
+  var html='';
+  if(curView!=='classement' && sc.length){
+    var max=Math.max(1, sc[0].total);
+    html += '<div class="card railCard"><div class="railT">Classement live</div>' +
+      sc.slice(0,8).map(function(r,i){
+        return '<div class="rr'+(i===0&&r.total>0?' lead':'')+'">' +
+          '<span class="nm">'+(i+1)+'. '+esc(r.p.name)+'</span>' +
+          '<span class="v">'+fmtPts(r.total)+'</span>' +
+          '<span class="bar" style="width:'+Math.max(2, Math.round(r.total/max*100))+'%"></span></div>';
+      }).join('') + '</div>';
+  }
+  if(S.events.length){
+    html += '<div class="card railCard"><div class="railT">Dernières actions</div>' +
+      S.events.slice(0,6).map(function(e){
+        var p=byId(S.players,e.playerId), v=evPts(e);
+        var q = e.chId && e.qty ? fmtQ(e.qty)+'\u202f'+esc(e.unit||'')+' · ' : '';
+        return '<div class="rr"><span class="nm">'+esc(p?p.name:'—')+'</span>' +
+          '<span class="v">'+(v===0&&e.chId ? '—' : (v>0?'+':'')+fmtPts(v))+'</span>' +
+          '<span class="sub">'+q+esc(e.title||'')+'</span></div>';
+      }).join('') + '</div>';
+  }
+  if(!html && S.challenges.length)
+    html = '<div class="card railCard"><div class="railT">Classement live</div>' +
+      '<p class="muted" style="margin-top:10px">Les scores s’afficheront ici dès la première validation.</p></div>';
+  el.innerHTML = html;
+}
 
 function renderDefis(prog){
   var el=$('#view-defis');
@@ -688,13 +774,13 @@ function renderDefis(prog){
       .filter(function(g){ return g.items.length; });
     var others = list.filter(function(x){ return !cl.some(function(c){ return c.name===(x.cat||'Divers'); }); });
     if(others.length) groups.push({cat:{name:'Divers', slot:7}, items:others});
-    html += groups.map(function(g){
+    html += '<div class="groups">' + groups.map(function(g){
       var d2 = g.items.filter(function(c){ return done(c,prog); }).length;
       var items = g.items.slice().sort(function(a,b){ return (done(a,prog)?1:0)-(done(b,prog)?1:0); });
       return '<div class="group"><div class="grpH"><i class="dot" style="--c:var(--c'+(g.cat.slot%8)+')"></i>' +
         esc(g.cat.name) + '<span class="gcount">'+d2+'/'+g.items.length+'</span></div>' +
         '<div class="list">' + items.map(function(c){ return rowHtml(c,prog,cm); }).join('') + '</div></div>';
-    }).join('');
+    }).join('') + '</div>';
   }
   html += '<div class="shead"><h2>Packs</h2><span class="sub">tout ajouter d’un coup</span></div>' +
     '<div class="packs">' + PACKS.map(packHtml).join('') + '</div>';
@@ -740,15 +826,24 @@ function renderJoueurs(sc){
   if(!S.players.length){
     html += '<div class="empty"><h2>Qui joue ce soir ?</h2><p>Ajoutez tout le monde, même ceux qui ne touchent pas une manette : les points de ravitaillement comptent autant.</p></div>';
   } else {
-    html += '<div class="list">' + sc.map(function(r){
+    var cl = cats().filter(function(c){ return sc.some(function(r){ return r.byCat[c.name]; }); });
+    html += '<div class="list pgrid">' + sc.map(function(r){
       var best=null, bv=0;
       for(var c in r.byCat) if(r.byCat[c]>bv){ bv=r.byCat[c]; best=c; }
-      return '<div class="prow">' + ava(r.p,'lg') +
-        '<div style="min-width:0"><div class="nm">'+esc(r.p.name)+(r.p.id===ME?' <span class="tiny">moi</span>':'')+'</div>' +
+      return '<div class="prow"><div class="pTop">' + ava(r.p,'lg') +
+        '<div style="min-width:0;flex:1"><div class="nm">'+esc(r.p.name)+(r.p.id===ME?' <span class="tiny">moi</span>':'')+'</div>' +
         '<div class="sub">'+r.acts+' action'+(r.acts>1?'s':'')+(best?' · '+esc(best):'')+'</div></div>' +
         '<div class="sc">'+fmtPts(r.total)+'</div>' +
-        '<button class="btn gh qt" data-pmenu="'+r.p.id+'" aria-label="Options">'+ic('dots')+'</button></div>';
+        '<button class="btn gh qt" data-pmenu="'+r.p.id+'" aria-label="Options">'+ic('dots')+'</button></div>' +
+        (r.total>0 ? '<div class="stack">' + cl.map(function(c){
+            var v=r.byCat[c.name]||0; if(!v) return '';
+            return '<i style="--c:var(--c'+(c.slot%8)+');width:'+(v/r.total*100)+'%" title="'+esc(r.p.name)+' — '+fmtPts(v)+' pts en '+esc(c.name)+'"></i>';
+          }).join('') + '</div>' : '') +
+        '</div>';
     }).join('') + '</div>';
+    if(cl.length>1)
+      html += '<div class="legend" style="border:0;padding:12px 2px 0">' + cl.map(function(c){
+        return '<span><i class="dot" style="--c:var(--c'+(c.slot%8)+')"></i>'+esc(c.name)+'</span>'; }).join('') + '</div>';
   }
   html += '<form id="pForm" style="display:flex;gap:8px;margin-top:12px">' +
     '<input class="inp" id="pName" maxlength="24" placeholder="Prénom ou pseudo" required />' +
@@ -785,7 +880,7 @@ function renderStats(sc){
   var cl = cats().filter(function(c){ return ct[c.name]; });
   Object.keys(ct).forEach(function(n){ if(!cl.some(function(c){ return c.name===n; })) cl.push({name:n, slot:7}); });
 
-  var html = '<div class="shead"><h2>Le plus utile en…</h2><span class="sub">points par catégorie</span></div><div class="list">';
+  var html = '<div class="shead"><h2>Le plus utile en…</h2><span class="sub">points par catégorie</span></div><div class="list catGrid">';
   html += cl.map(function(c){
     var rows = Object.keys(ct[c.name].by).map(function(pid){ return {p:byId(S.players,pid), v:ct[c.name].by[pid]}; })
       .filter(function(r){ return r.p; }).sort(function(a,b){ return b.v-a.v; });
