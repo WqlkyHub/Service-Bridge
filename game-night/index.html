@@ -177,7 +177,11 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 .row.done h3{color:var(--text-2)}
 .row .sideBtns{display:flex;gap:5px}
 .addBtn{width:36px;height:36px;border-radius:9px;background:var(--inv-bg);color:var(--inv-text);display:grid;place-items:center}
-.row.done .addBtn{background:var(--surface-2);color:var(--text-2);box-shadow:inset 0 0 0 1px var(--line)}
+.row.done .addBtn{background:none;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.shared{display:flex;gap:9px;align-items:flex-start;background:var(--surface-2);border-radius:10px;
+  padding:11px 12px;font-size:13px;color:var(--text-2);line-height:1.4}
+.shared svg{margin-top:2px;color:var(--text-3)}
+.shared b{font-weight:500;color:var(--text)}
 .tick{display:inline-flex;align-items:center;gap:4px;font-family:var(--mono);font-size:10px;letter-spacing:.08em;
   text-transform:uppercase;color:var(--text-2);background:var(--accent);padding:2px 7px;border-radius:5px}
 :root[data-theme="dark"] .tick,:root:not([data-theme="light"]) .tick{color:var(--on-accent)}
@@ -344,7 +348,8 @@ var P = {
   trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
   pm:'<path d="M5 12h14M12 5v14" opacity=".999"/>',
   copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
-  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>'
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>',
+  users:'<circle cx="9" cy="8" r="3.4"/><path d="M2.5 19a6.5 6.5 0 0 1 13 0"/><path d="M16 5.5a3.4 3.4 0 0 1 0 5"/><path d="M18 13.6a6.5 6.5 0 0 1 3.5 5.4"/>'
 };
 function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>'; }
 
@@ -695,7 +700,11 @@ function rowHtml(ch,prog,cm){
       (ch.note?'<p class="note">'+esc(ch.note)+'</p>':'') +
       (t>1 ? '<div class="track"><i style="width:'+pct+'%"></i></div>' : '') +
       (fin || t>1 || ppl.length ? '<div class="under">' +
-        (fin ? '<span class="tick">'+ic('check')+'Validé</span>' : (t>1 ? '<span>'+fmtQ(q)+' / '+fmtQ(t)+' '+esc(ch.unit||'')+'</span>' : '')) +
+        (fin ? '<span class="tick">'+ic('check')+'Validé</span>' +
+                (t>1 ? '<span>'+fmtQ(q)+' / '+fmtQ(t)+' '+esc(ch.unit||'')+'</span>'
+                     : (q>1 ? '<span>'+fmtQ(q)+' participations</span>' : '')) +
+              (ppl.length>1 ? '' : '')
+             : (t>1 ? '<span>'+fmtQ(q)+' / '+fmtQ(t)+' '+esc(ch.unit||'')+'</span>' : '')) +
         (ppl.length ? '<span class="ppl">'+ppl.slice(0,6).map(function(p){ return ava(p,'sm'); }).join('')+'</span>' : '') +
       '</div>' : '') +
     '</div>' +
@@ -705,7 +714,8 @@ function rowHtml(ch,prog,cm){
         : '<span class="todo" title="Points à définir">—</span>') + '</div>' +
       '<div class="sideBtns">' +
         '<button class="btn gh qt" data-menu="'+ch.id+'" aria-label="Options">'+ic('dots')+'</button>' +
-        '<button class="addBtn" data-add="'+ch.id+'" aria-label="Ajouter une progression">'+ic('plus')+'</button>' +
+        '<button class="addBtn" data-add="'+ch.id+'" aria-label="'+(fin?'Participer encore':'Ajouter une progression')+'" ' +
+          'title="'+(fin?'Déjà validé — vous pouvez quand même participer':'Ajouter une progression')+'">'+ic('plus')+'</button>' +
       '</div>' +
     '</div></article>';
 }
@@ -812,6 +822,7 @@ function sheet(kicker,title,body){
   if($('#scrim').hidden) lastFocus = document.activeElement;
   $('#sheet').innerHTML = '<div class="sh"><div><div class="kicker">'+kicker+'</div><h2 id="sheetTitle">'+title+'</h2></div>' +
     '<button class="ib" data-close="1" aria-label="Fermer">'+ic('close')+'</button></div>' + body;
+  $('#toast').hidden=true;          // une notification en cours ne doit pas masquer la feuille
   $('#scrim').hidden=false;
   $('#sheet').scrollTop=0;
   $('#sheet').focus();
@@ -827,17 +838,32 @@ function addSheet(chId){
   var ch=byId(S.challenges,chId); if(!ch) return;
   if(!S.players.length){ toast('Ajoutez d’abord des joueurs'); return go('joueurs'); }
   var prog=progress(), q0=prog[chId]||0, t=ch.target||1;
-  var step=stepFor(ch.unit), rest=Math.max(step, Math.round((t-q0)/step)*step);
-  var maxV=Math.max(step, t>1 ? rest : 1);
-  var slider = t>1 && maxV>step;
+  var step=stepFor(ch.unit);
   var snap=function(x){ return Math.round(Math.round(x/step)*step*100)/100; };
+  // Objectif déjà atteint : chacun peut quand même ajouter sa part, sur toute la course.
+  var rest=snap(t-q0);
+  var maxV = t>1 ? (rest>=step ? rest : snap(t)) : 1;
+  var slider = t>1;
   var val=t>1 ? Math.min(maxV, Math.max(step, snap(t/10))) : 1;
   var quick=[]; [step, snap(t/20), snap(t/10), snap(t/4)].forEach(function(v){
     if(v>=step && v<maxV && quick.indexOf(v)<0) quick.push(v); });
   quick.sort(function(a,b){ return a-b; }); quick=quick.slice(0,4);
   var who=ME||S.players[0].id;
+  // qui a déjà mis la main à la pâte, et combien
+  var by={}, order=[];
+  S.events.forEach(function(e){
+    if(e.chId!==chId) return;
+    if(by[e.playerId]===undefined){ by[e.playerId]=0; order.push(e.playerId); }
+    by[e.playerId]+=(e.qty||0);
+  });
+  var already = order.map(function(pid){
+    var pl=byId(S.players,pid); if(!pl) return null;
+    return esc(pl.name) + (t>1 ? ' <b class="mono">'+fmtQ(by[pid])+'</b>\u202f'+esc(ch.unit||'') : '');
+  }).filter(Boolean);
   sheet(esc(ch.cat||'Défi'), esc(ch.title),
     '<div class="stack-form">' +
+      (already.length ? '<p class="shared">'+ic('users')+'<span>Déjà marqué par '+already.join(' · ')+
+        ' — chacun peut ajouter sa part.</span></p>' : '') +
       '<div class="fld"><label>Qui marque</label><div class="pplRow" id="whoRow">' +
         S.players.map(function(p){ return '<button type="button" data-w="'+p.id+'" aria-pressed="'+(p.id===who)+'">'+ava(p,'sm')+esc(p.name)+'</button>'; }).join('') +
       '</div></div>' +
@@ -848,7 +874,7 @@ function addSheet(chId){
           '<div class="quick">' +
             quick.map(function(v){
               return '<button type="button" class="btn qt" data-q="'+v+'">+'+fmtQ(v)+'</button>'; }).join('') +
-            '<button type="button" class="btn qt" data-q="'+maxV+'">Tout ('+fmtQ(maxV)+')</button>' +
+            '<button type="button" class="btn qt" data-q="'+maxV+'">'+(rest>=step?'Reste':'Objectif')+' ('+fmtQ(maxV)+')</button>' +
           '</div>' +
           '<div class="qtyPts" id="qP"></div>' +
         '</div>'

@@ -66,6 +66,9 @@ Les bonus et malus manuels (menu d'un joueur) s'ajoutent hors défi.
 
 ## Détails utiles
 
+- **Un défi n'appartient à personne.** Tout le monde peut contribuer au même défi,
+  avant comme après que l'objectif soit atteint : la feuille d'ajout rappelle qui a
+  déjà marqué et combien, et chacun est payé au prorata de ce qu'il a fait.
 - Un défi sans valeur se valide quand même : la progression est gardée, les points suivront.
 - Au-delà de dix défis, un champ de recherche apparaît ; il ignore les accents.
 - Les écritures partent en lot : charger un pack de vingt défis, ou supprimer un
