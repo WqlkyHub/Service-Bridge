@@ -121,10 +121,12 @@ que soit l'onglet ouvert.
   entre les sélectionnés — un 3v3 gagné ensemble se valide une fois et crédite les
   trois) ou *détail par joueur* (la part de chacun, au pas de l'unité). Une action à
   plusieurs s'annule d'un seul geste.
-- **Corriger une erreur.** Le menu `•••` d'un défi ouvre ses progressions : on
-  ajuste une quantité au pas de l'unité, on réattribue un apport à un autre
-  joueur, ou on le supprime. Chaque correction part aussitôt sur les autres
-  appareils. Le Journal garde aussi son bouton d'annulation par action.
+- **Corriger une erreur.** Le menu `•••` d'un défi ouvre son **total réalisé** :
+  un grand nombre qu'on augmente, diminue ou saisit directement. Une baisse
+  retire d'abord du dernier apport, une hausse s'ajoute au dernier joueur qui a
+  marqué, et la répartition entre joueurs reste affichée en dessous. Chaque
+  correction part aussitôt sur les autres appareils. Le Journal garde son bouton
+  d'annulation pour retirer une action précise.
 - Un défi sans valeur se valide quand même : la progression est gardée, les points suivront.
 - Au-delà de dix défis, un champ de recherche apparaît ; il ignore les accents.
 - Les écritures partent en lot : charger un pack de vingt défis, ou supprimer un
