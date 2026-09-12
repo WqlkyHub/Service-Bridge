@@ -187,12 +187,14 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 .dRow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 .dRow .v{font-family:var(--mono);font-size:16px;min-width:52px;text-align:right}
 .dRow .u{font-size:12px;color:var(--text-3);min-width:40px}
-.totRow{display:flex;align-items:center;gap:10px;justify-content:center;margin-top:4px}
-.totIn{width:120px;text-align:center;font-size:26px;font-weight:500;letter-spacing:-.04em;padding:10px 6px;min-height:58px}
-.totIn::-webkit-outer-spin-button,.totIn::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
-.totIn[type=number]{-moz-appearance:textfield}
-.totU{font-size:14px;color:var(--text-2);min-width:52px}
-.stepBtn.big{width:52px;height:52px;border-radius:14px;font-size:22px}
+.pTot{display:flex;align-items:center;gap:7px;padding:9px 0;border-top:1px solid var(--line)}
+.pTot:first-of-type{border-top:0}
+.pTot .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14.5px;color:var(--text-2)}
+.pTot.has .nm{color:var(--text);font-weight:500}
+.pTot .ptIn{width:76px;flex:0 0 auto;text-align:center;font-size:17px;font-weight:500;padding:8px 4px;min-height:44px}
+.pTot .ptIn::-webkit-outer-spin-button,.pTot .ptIn::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.pTot .ptIn[type=number]{-moz-appearance:textfield}
+.stepBtn{flex:0 0 auto}
 .eRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:11px 0;border-top:1px solid var(--line)}
 .eRow:first-of-type{border-top:0}
 .whoBtn{display:flex;align-items:center;gap:8px;flex:1 1 150px;min-width:0;text-align:left;padding:4px 0}
@@ -1002,7 +1004,7 @@ function addSheet(chId){
   sheet(esc(ch.cat||'Défi'), esc(ch.title),
     '<div class="stack-form">' +
       (already.length ? '<p class="shared">'+ic('users')+'<span>Déjà marqué par '+already.join(' · ')+
-        ' — chacun peut ajouter sa part. <button type="button" class="lnk" data-prog="'+chId+'">Corriger le total</button></span></p>' : '') +
+        ' — chacun peut ajouter sa part. <button type="button" class="lnk" data-prog="'+chId+'">Corriger</button></span></p>' : '') +
       '<div class="fld"><div class="lblRow"><label>Qui marque</label>' +
         (S.players.length>1 ? '<button type="button" class="lnk" id="whoAll">Tout le monde</button>' : '') + '</div>' +
         '<div class="pplRow" id="whoRow">' + S.players.map(function(p){
@@ -1096,18 +1098,22 @@ function asUpd(){
   $('#asSum').textContent=sum;
   $('#doAdd').disabled = !parts.length || total<=0;
 }
-// Corriger après coup : on affiche le total réalisé, on l'augmente ou on le
-// diminue. Une baisse retire d'abord du dernier apport, une hausse s'ajoute au
-// dernier joueur qui a marqué. Tout part aussitôt sur les autres appareils.
-function totalOf(chId){
+// Corriger après coup : le total de chaque joueur sur ce défi, ajustable.
+// Une baisse retire de ses apports les plus récents, une hausse s'ajoute au
+// dernier, ou en crée un. Tout part aussitôt sur les autres appareils.
+function totalOf(chId, pid){
   var q=0;
-  S.events.forEach(function(e){ if(e.chId===chId) q+=(e.qty||0); });
+  S.events.forEach(function(e){
+    if(e.chId!==chId) return;
+    if(pid && e.playerId!==pid) return;
+    q+=(e.qty||0);
+  });
   return Math.round(q*100)/100;
 }
-function setTotal(chId, want){
+function setPlayerTotal(chId, pid, want){
   var ch=byId(S.challenges,chId); if(!ch) return;
-  var evs=S.events.filter(function(e){ return e.chId===chId; });   // du plus récent au plus ancien
-  var cur=totalOf(chId);
+  var evs=S.events.filter(function(e){ return e.chId===chId && e.playerId===pid; }); // du plus récent au plus ancien
+  var cur=totalOf(chId, pid);
   var goal=Math.max(0, Math.round((want||0)*100)/100);
   var diff=Math.round((goal-cur)*100)/100;
   if(!diff) return;
@@ -1119,9 +1125,7 @@ function setTotal(chId, want){
       top.points=ptsFor(ch, top.qty);
       ops.push({op:'put', coll:'events', obj:top});
     } else {
-      var who=(ME && byId(S.players,ME)) ? ME : (S.players[0] && S.players[0].id);
-      if(!who){ toast('Ajoutez d\u2019abord des joueurs'); return; }
-      ops.push({op:'put', coll:'events', obj:{id:uid(), chId:chId, playerId:who,
+      ops.push({op:'put', coll:'events', obj:{id:uid(), chId:chId, playerId:pid,
         cat:ch.cat||'Divers', title:ch.title, unit:ch.unit||'fois',
         qty:diff, points:ptsFor(ch,diff), at:Date.now()}});
     }
@@ -1139,33 +1143,26 @@ function setTotal(chId, want){
 }
 function progSheet(chId){
   var ch=byId(S.challenges,chId); if(!ch) return;
-  var t=ch.target||1, step=stepFor(ch.unit), q=totalOf(chId);
-  var by={}, order=[];
-  S.events.forEach(function(e){
-    if(e.chId!==chId) return;
-    if(by[e.playerId]===undefined){ by[e.playerId]=0; order.push(e.playerId); }
-    by[e.playerId]+=(e.qty||0);
-  });
-  var part=order.map(function(pid){
-    var pl=byId(S.players,pid); if(!pl) return null;
-    return esc(pl.name)+' <b class="mono">'+fmtQ(by[pid])+'</b>';
-  }).filter(Boolean);
+  if(!S.players.length){ toast('Ajoutez d\u2019abord des joueurs'); return go('joueurs'); }
+  var t=ch.target||1, step=stepFor(ch.unit), tot=totalOf(chId);
   sheet(esc(ch.cat||'Défi'), esc(ch.title),
-    '<div class="fld"><label>Total réalisé</label>' +
-      '<div class="totRow">' +
-        '<button type="button" class="stepBtn big" data-tstep="'+chId+'|-1" aria-label="Diminuer">\u2212</button>' +
-        '<input class="inp mono totIn" id="totIn" type="number" inputmode="decimal" min="0" step="'+step+'" ' +
-          'value="'+q+'" data-ch="'+chId+'" aria-label="Total réalisé" />' +
-        '<span class="totU">'+esc(ch.unit||'fois')+'</span>' +
-        '<button type="button" class="stepBtn big" data-tstep="'+chId+'|1" aria-label="Augmenter">+</button>' +
-      '</div>' +
-      '<div class="qtyPts" style="margin-top:12px">sur '+fmtQ(t)+'\u202f'+esc(ch.unit||'fois') +
-        (q>=t-1e-9 ? ' · objectif atteint' : '') +
-        (hasPts(ch) ? ' · '+fmtPts(ptsFor(ch,q))+' points en jeu' : '') + '</div>' +
-      (part.length ? '<p class="tiny" style="text-align:center;margin-top:8px">Réparti entre '+part.join(' · ')+
-        '<br />En diminuant, les unités sont retirées du dernier apport.</p>' : '') +
+    '<div class="fld"><div class="lblRow"><label>Total par joueur</label>' +
+      '<span class="tiny">en '+esc(ch.unit||'fois')+'</span></div>' +
+      S.players.map(function(pl){
+        var v=totalOf(chId, pl.id);
+        return '<div class="pTot'+(v?' has':'')+'">' + ava(pl,'sm') +
+          '<span class="nm">'+esc(pl.name)+'</span>' +
+          '<button type="button" class="stepBtn" data-pstep="'+chId+'|'+pl.id+'|-1" aria-label="Diminuer pour '+esc(pl.name)+'">\u2212</button>' +
+          '<input class="inp mono ptIn" id="pt-'+pl.id+'" type="number" inputmode="decimal" min="0" step="'+step+'" ' +
+            'value="'+v+'" data-ch="'+chId+'" data-p="'+pl.id+'" aria-label="Total de '+esc(pl.name)+'" />' +
+          '<button type="button" class="stepBtn" data-pstep="'+chId+'|'+pl.id+'|1" aria-label="Augmenter pour '+esc(pl.name)+'">+</button>' +
+        '</div>';
+      }).join('') +
+      '<div class="qtyPts" style="margin-top:14px">Total '+fmtQ(tot)+'\u202f'+esc(ch.unit||'fois')+' sur '+fmtQ(t) +
+        (tot>=t-1e-9 ? ' · objectif atteint' : '') +
+        (hasPts(ch) ? ' · '+fmtPts(ptsFor(ch,tot))+' points en jeu' : '') + '</div>' +
     '</div>' +
-    '<button class="btn full" data-add="'+chId+'" style="margin-top:16px">'+ic('plus')+'Ajouter une progression</button>');
+    '<button class="btn full" data-add="'+chId+'" style="margin-top:16px">'+ic('plus')+'Ajouter une progression à plusieurs</button>');
 }
 function chSheet(ch){
   var c=cats(), e=ch||{};
@@ -1364,16 +1361,16 @@ document.addEventListener('click', function(evt){
     var nEv=S.events.filter(function(e){ return e.chId===c2.id; }).length;
     return sheet(esc(c2.cat||''), esc(c2.title),
       '<div style="display:flex;flex-direction:column;gap:8px">' +
-      '<button class="btn full" data-prog="'+c2.id+'">'+ic('undo')+'Corriger le total</button>' +
+      '<button class="btn full" data-prog="'+c2.id+'">'+ic('undo')+'Corriger les totaux</button>' +
       '<button class="btn full" data-editch="'+c2.id+'">'+ic('edit')+'Modifier le défi</button>' +
       '<button class="btn full dg" data-delch="'+c2.id+'">'+ic('trash')+'Supprimer le défi</button></div>');
   }
   if(d.editch){ var c3=byId(S.challenges,d.editch); closeSheet(); return chSheet(c3); }
   if(d.prog) return progSheet(d.prog);
-  if(d.tstep){
-    var tb=d.tstep.split('|'), chT=byId(S.challenges,tb[0]); if(!chT) return;
+  if(d.pstep){
+    var pb=d.pstep.split('|'), chT=byId(S.challenges,pb[0]); if(!chT) return;
     var st=stepFor(chT.unit);
-    setTotal(chT.id, Math.max(0, Math.round((totalOf(chT.id)+parseFloat(tb[1])*st)*100)/100));
+    setPlayerTotal(chT.id, pb[1], Math.round((totalOf(chT.id, pb[1])+parseFloat(pb[2])*st)*100)/100);
     progSheet(chT.id); return;
   }
 
@@ -1502,10 +1499,10 @@ document.addEventListener('input', function(e){
 });
 
 document.addEventListener('change', function(e){
-  if(e.target.id==='totIn'){
-    var chId=e.target.dataset.ch, v=parseFloat(e.target.value);
+  if(e.target.classList && e.target.classList.contains('ptIn')){
+    var chId=e.target.dataset.ch, pid=e.target.dataset.p, v=parseFloat(e.target.value);
     if(isNaN(v) || v<0){ progSheet(chId); return; }
-    setTotal(chId, v); progSheet(chId); return;
+    setPlayerTotal(chId, pid, v); progSheet(chId); return;
   }
   if(e.target.id==='chCat'){
     var n=$('#chNewCat');
