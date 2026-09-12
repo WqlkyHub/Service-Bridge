@@ -440,7 +440,7 @@ var P = {
 function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>'; }
 
 /* ================= données de départ ================= */
-var VERSION = '2026-09-12 · 15h40';   // repère de version de l'app
+var VERSION = '2026-09-12 · 16h30';   // repère de version de l'app
 var DEF_CATS = ['TFT','Sport','LOL','VALO','Autres jeux','Nutrition'];
 // Proposition de barème : [valeur du défi, prime versée quand l'objectif est
 // atteint]. La valeur se partage au prorata des unités faites ; la prime
@@ -500,7 +500,7 @@ var PACKS = [
 var LS='manettedor.v2', LS_OLD='manettedor.v1', LS_ME='manettedor.me';
 var S = {meta:{name:"La Manette d'Or", date:new Date().toISOString().slice(0,10), cats:null}, players:[], challenges:[], events:[]};
 var MODE='local', DB=null, ME=null, LAN=null;
-var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null, loaded=false;
+var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null, loaded=false, autoDone=false;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -612,7 +612,7 @@ function sortAll(){
 /* ================= synchro ================= */
 function boot(){
   loadLocal(); sortAll(); render();
-  if(!window.claude || typeof window.claude.use!=='function') loaded=true;   // hors ligne : rien à attendre
+  if(!window.claude || typeof window.claude.use!=='function'){ loaded=true; setTimeout(maybeAutoBareme, 50); }
   if(window.claude && typeof window.claude.use==='function'){
     window.claude.use('db').then(function(db){ if(db) startCloud(db); }).catch(function(){});
     return;
@@ -635,7 +635,7 @@ function startCloud(db){
         return obj;
       });
       sortAll();
-      if(coll==='challenges') loaded=true;
+      if(coll==='challenges'){ loaded=true; setTimeout(maybeAutoBareme, 50); }
       render();
       if(coll in seen){ seen[coll]=true; seed(); }
     }, function(err){ toast('Lecture impossible ('+((err&&err.code)||'erreur')+')'); });
@@ -658,6 +658,7 @@ function startLan(){
     MODE='lan'; LAN={rev:d.rev||0, host:d.host||location.host};
     loaded=true;
     applyRemote(d.state);
+    setTimeout(maybeAutoBareme, 50);
     var es = new EventSource('api/events');
     es.addEventListener('state', function(m){
       try{ var p=JSON.parse(m.data); LAN.rev=p.rev; applyRemote(p.state); }catch(e){}
@@ -1329,6 +1330,26 @@ function toast(msg, undo, label, cb){
   $('#toast').hidden = false;
   clearTimeout(toastTimer);
   if(!toastCb) toastTimer = setTimeout(function(){ $('#toast').hidden=true; }, 4500);
+}
+// Le barème s'applique de lui-même au premier chargement d'une soirée dont les
+// défis n'ont pas de valeur : plus besoin de trouver un bouton. Une seule fois,
+// jamais sur un défi déjà chiffré, et tout reste modifiable ensuite.
+function maybeAutoBareme(){
+  if(autoDone || S.meta.baremeApplied || !S.challenges.length) return;
+  autoDone=true;
+  var idx={}; for(var k in BAREME) idx[norm(k)]=BAREME[k];
+  var ops=[], n=0;
+  S.challenges.forEach(function(c){
+    var b=idx[norm(c.title)];
+    if(!b || hasPts(c)) return;
+    var o={}; for(var k2 in c) o[k2]=c[k2];
+    o.points=b[0]; o.bonus=b[1]; n++;
+    ops.push({op:'put', coll:'challenges', obj:o});
+  });
+  setMeta({baremeApplied:true});
+  if(!n) return;
+  applyOps(ops);
+  toast(n+' défis chiffrés automatiquement — à ajuster via ••• → Modifier');
 }
 function applyBareme(){
   var ops=[], n=0, idx={};
