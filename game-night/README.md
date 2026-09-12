@@ -16,12 +16,21 @@ l'écran d'accueil » installe l'app : elle fonctionne ensuite hors connexion
 
 **C'est le mode à utiliser pour jouer à plusieurs : il ne demande aucun compte.**
 
-Sur un ordinateur du réseau, dans ce dossier :
+Le plus simple : **double-cliquez `demarrer-windows.bat`** (Windows) ou
+**`demarrer-mac-linux.command`** (macOS, Linux). Le lanceur vérifie que Node.js
+est présent, initialise la soirée avec les joueurs et les 24 défis au premier
+lancement, puis affiche les adresses à ouvrir.
+
+En ligne de commande, dans ce dossier :
 
 ```bash
 cp soiree-depart.json soiree.json   # facultatif : démarre avec les joueurs et les 24 défis
 node server.js                      # ou PORT=3000 node server.js
 ```
+
+Au tout premier lancement, Windows demande d'autoriser Node.js sur le réseau :
+acceptez pour les **réseaux privés**, sinon les téléphones ne verront pas le
+serveur.
 
 Le serveur affiche les adresses à ouvrir, par exemple `http://192.168.1.20:8080`.
 Chacun ouvre cette adresse sur son téléphone : toute validation apparaît
@@ -95,4 +104,6 @@ Les bonus et malus manuels (menu d'un joueur) s'ajoutent hors défi.
 |---|---|
 | `index.html` | toute l'app (interface, données, synchro) |
 | `server.js` | serveur de soirée en réseau local |
+| `demarrer-windows.bat`, `demarrer-mac-linux.command` | lanceurs double-clic |
+| `soiree-depart.json` | session de départ : trois joueurs et les 24 défis |
 | `manifest.json`, `service-worker.js`, `icon.svg` | installation et fonctionnement hors ligne |
