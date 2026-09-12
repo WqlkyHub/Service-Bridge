@@ -59,6 +59,7 @@
   color-scheme:dark;
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--text);font-family:var(--ui);font-size:15px;line-height:1.45;
   -webkit-font-smoothing:antialiased;padding-bottom:calc(76px + env(safe-area-inset-bottom))}
@@ -154,9 +155,9 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 
 /* liste de défis */
 .group{margin-bottom:26px}
-.gh{display:flex;align-items:center;gap:8px;padding:0 2px 9px;font-family:var(--mono);font-size:10.5px;
+.grpH{display:flex;align-items:center;gap:8px;padding:0 2px 9px;font-family:var(--mono);font-size:10.5px;
   letter-spacing:.08em;text-transform:uppercase;color:var(--text-2)}
-.gh .gcount{margin-left:auto;color:var(--text-3)}
+.grpH .gcount{margin-left:auto;color:var(--text-3)}
 .list{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);overflow:hidden}
 .row{display:flex;gap:13px;padding:14px 15px;border-top:1px solid var(--line);align-items:flex-start}
 .row:first-child{border-top:0}
@@ -178,6 +179,17 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 .row .sideBtns{display:flex;gap:5px}
 .addBtn{width:36px;height:36px;border-radius:9px;background:var(--inv-bg);color:var(--inv-text);display:grid;place-items:center}
 .row.done .addBtn{background:none;color:var(--text);box-shadow:inset 0 0 0 1.5px var(--line-2)}
+.lblRow{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
+.lnk{font-size:12.5px;color:var(--text-2);text-decoration:underline;text-underline-offset:2px}
+.lnk:hover{color:var(--text)}
+.dRow{display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--line)}
+.dRow:first-of-type{border-top:0}
+.dRow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.dRow .v{font-family:var(--mono);font-size:16px;min-width:52px;text-align:right}
+.dRow .u{font-size:12px;color:var(--text-3);min-width:40px}
+.stepBtn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);
+  display:grid;place-items:center;font-size:17px;line-height:1;color:var(--text)}
+.stepBtn:active{background:var(--surface-2)}
 .shared{display:flex;gap:9px;align-items:flex-start;background:var(--surface-2);border-radius:10px;
   padding:11px 12px;font-size:13px;color:var(--text-2);line-height:1.4}
 .shared svg{margin-top:2px;color:var(--text-3)}
@@ -241,7 +253,7 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 
 /* formulaires */
 .fld{display:flex;flex-direction:column;gap:6px;min-width:0}
-.fld>label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
+.fld label{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-3)}
 .inp{width:100%;min-height:44px;background:var(--surface);border:1px solid var(--line-2);border-radius:10px;padding:11px 13px}
 .inp:focus{outline:none;border-color:var(--text);box-shadow:0 0 0 3px var(--surface-3)}
 select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--text-3) 50%),linear-gradient(135deg,var(--text-3) 50%,transparent 50%);
@@ -354,40 +366,42 @@ var P = {
 function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>'; }
 
 /* ================= données de départ ================= */
-var DEF_CATS = ['Jeux vidéo','Sport','Nourriture','Boisson','Social','Chaos'];
-var UNITS = ['fois','km','pompes','squats','tractions','kills','parties','manches','rounds','bières','verres','shots','kg','g','L','min','h','photos'];
+var DEF_CATS = ['TFT','Sport','LOL','VALO','Autres jeux','Nutrition'];
+var UNITS = ['fois','top 1','parties','manches','rounds','kills','km','tractions','pompes','squats','bières','verres','shots','kg','g','L','min','h'];
 var STEPS = {km:0.5, kg:0.1, L:0.25, g:50, h:0.5, min:5};
-// [titre, détail, catégorie, points (au total), objectif, unité]
+// [titre, détail, catégorie, objectif, unité] — aucun point n'est fixé ici,
+// le barème vous appartient.
 var PACKS = [
-  {id:'notre', name:'Notre liste', desc:'les 22 défis de la bande', items:[
-    ['Courir 20 km','En une ou plusieurs sorties','Sport',20,'km'],
+  {id:'notre', name:'Notre liste', desc:'les 24 défis de la bande', items:[
+    ['Top 1 TFT ×10','Dix premières places cumulées','TFT',10,'top 1'],
+    ['3★ 5 cost sur TFT','','TFT',1,'fois'],
+
+    ['Courir 21 km','En une ou plusieurs sorties','Sport',21,'km'],
+    ['100 tractions','Cumulées sur la soirée','Sport',100,'tractions'],
     ['200 pompes','Cumulées sur la soirée','Sport',200,'pompes'],
-    ['150 squats','Cumulés sur la soirée','Sport',150,'squats'],
-    ['75 tractions','Cumulées sur la soirée','Sport',75,'tractions'],
-    ['Top 1 Fortnite classé','En classé uniquement','Jeux vidéo',1,'fois'],
-    ['Top 1 Fall Guys','La couronne','Jeux vidéo',1,'fois'],
-    ['Faire un ace','Cinq frags sur le même round','Jeux vidéo',1,'fois'],
-    ['Gagner une game Rocket League','','Jeux vidéo',1,'fois'],
-    ['Valo no scope','Un kill au sniper sans viseur','Jeux vidéo',1,'kills'],
-    ['Valo couteau','Un kill au couteau','Jeux vidéo',1,'kills'],
-    ['Top 1 Apex','Champions','Jeux vidéo',1,'fois'],
-    ['Faire un pentakill','','Jeux vidéo',1,'fois'],
-    ['Pull une alt','Preuve à l’écran','Jeux vidéo',1,'fois'],
-    ['Un 5 cost 3 étoiles TFT','','Jeux vidéo',1,'fois'],
-    ['Gagner 5 retakes d’affilée','Sans en perdre un seul','Jeux vidéo',5,'rounds'],
-    ['Gagner 3 arena','','Jeux vidéo',3,'parties'],
-    ['Finir Minecraft','Le dragon, rien de moins','Jeux vidéo',1,'fois'],
-    ['Boire 20 bières','Sur toute la soirée','Boisson',20,'bières'],
-    ['2 kg de nuggets','Pesée à l’appui','Nourriture',2,'kg'],
-    ['Faire pleurer un gosse','Ou se faire traiter de cheater','Chaos',1,'fois']
-  ]},
-  {id:'ambiance', name:'Ambiance & QG', desc:'ceux qui font tourner la soirée', items:[
-    ['Commentateur','Commenter une manche comme un journaliste sportif','Social',1,'manches'],
-    ['DJ de service','Lancer la playlist entre deux parties','Social',3,'fois'],
-    ['Ravitaillement','Ramener des snacks pour tout le monde','Nourriture',2,'fois'],
-    ['Support technique','Régler une manette, un câble, une connexion','Social',3,'fois'],
-    ['Dernier debout','Être le dernier à poser sa manette','Chaos',1,'fois'],
-    ['Photographe','Immortaliser les moments cultes','Social',5,'photos']
+    ['200 squats','Cumulés sur la soirée','Sport',200,'squats'],
+
+    ['1 game 0 mort en ranked','Ranked uniquement','LOL',1,'fois'],
+    ['Game à +30 kills/assists','Sur une seule partie','LOL',1,'fois'],
+    ['1 penta sur LOL','','LOL',1,'fois'],
+    ['Gagner 3 Arena','','LOL',3,'parties'],
+
+    ['1 cut en ranked','','VALO',1,'fois'],
+    ['1 ace Valorant','Cinq frags sur le même round','VALO',1,'fois'],
+    ['1 no scope','','VALO',1,'fois'],
+    ['Win 3v3 ranked sur RL','Rocket League','VALO',1,'fois'],
+    ['Gagner 5 retakes d\u2019affilée','Les cinq à la suite, sans en perdre un','VALO',1,'fois'],
+
+    ['Finir Minecraft hardcore','','Autres jeux',1,'fois'],
+    ['Top 1 Fall Guys','','Autres jeux',1,'fois'],
+    ['Top 1 Fortnite','','Autres jeux',1,'fois'],
+    ['Top 1 Meccha Chameleon','','Autres jeux',1,'fois'],
+    ['Top 1 Apex','','Autres jeux',1,'fois'],
+    ['Geoguessr à moins de 10 km','Sur un round','Autres jeux',1,'fois'],
+    ['Se faire insulter ou traiter de cheat','En game, témoins à l\u2019appui','Autres jeux',1,'fois'],
+
+    ['2 kg de nuggets','Sans quitter la table','Nutrition',2,'kg'],
+    ['20 bières','Sur toute la soirée','Nutrition',20,'bières']
   ]}
 ];
 
@@ -395,7 +409,7 @@ var PACKS = [
 var LS='manettedor.v2', LS_OLD='manettedor.v1', LS_ME='manettedor.me';
 var S = {meta:{name:"La Manette d'Or", date:new Date().toISOString().slice(0,10), cats:null}, players:[], challenges:[], events:[]};
 var MODE='local', DB=null, ME=null, LAN=null;
-var fState='tous', fCat='tous', fQ='', toastTimer=null, undoId=null;
+var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, AS=null;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -677,7 +691,7 @@ function renderDefis(prog){
     html += groups.map(function(g){
       var d2 = g.items.filter(function(c){ return done(c,prog); }).length;
       var items = g.items.slice().sort(function(a,b){ return (done(a,prog)?1:0)-(done(b,prog)?1:0); });
-      return '<div class="group"><div class="gh"><i class="dot" style="--c:var(--c'+(g.cat.slot%8)+')"></i>' +
+      return '<div class="group"><div class="grpH"><i class="dot" style="--c:var(--c'+(g.cat.slot%8)+')"></i>' +
         esc(g.cat.name) + '<span class="gcount">'+d2+'/'+g.items.length+'</span></div>' +
         '<div class="list">' + items.map(function(c){ return rowHtml(c,prog,cm); }).join('') + '</div></div>';
     }).join('');
@@ -694,6 +708,7 @@ function rowHtml(ch,prog,cm){
   var q=prog[ch.id]||0, t=ch.target||1, fin=q>=t-1e-9, pct=Math.min(100,Math.round(q/t*100));
   var ppl=(cm&&cm[ch.id])||[];
   var objTxt = t>1 ? fmtQ(t)+' '+esc(ch.unit||'fois') : '';
+  if(objTxt && norm(ch.title).indexOf(norm(fmtQ(t)))>=0) objTxt='';   // « 200 pompes » ne répète pas son objectif
   return '<article class="row'+(fin?' done':'')+'">' +
     '<div class="main">' +
       '<div class="tl"><h3>'+esc(ch.title)+'</h3>' + (objTxt?'<span class="obj">'+objTxt+'</span>':'') + '</div>' +
@@ -829,6 +844,7 @@ function sheet(kicker,title,body){
 }
 function closeSheet(){
   if($('#scrim').hidden) return;
+  AS=null;
   $('#scrim').hidden=true;
   if(lastFocus && document.contains(lastFocus)){ try{ lastFocus.focus(); }catch(e){} }
   lastFocus=null;
@@ -836,19 +852,22 @@ function closeSheet(){
 
 function addSheet(chId){
   var ch=byId(S.challenges,chId); if(!ch) return;
-  if(!S.players.length){ toast('Ajoutez d’abord des joueurs'); return go('joueurs'); }
+  if(!S.players.length){ toast('Ajoutez d\u2019abord des joueurs'); return go('joueurs'); }
   var prog=progress(), q0=prog[chId]||0, t=ch.target||1;
   var step=stepFor(ch.unit);
   var snap=function(x){ return Math.round(Math.round(x/step)*step*100)/100; };
-  // Objectif déjà atteint : chacun peut quand même ajouter sa part, sur toute la course.
+  // Objectif atteint : la course du curseur repart en entier, chacun peut encore participer.
   var rest=snap(t-q0);
   var maxV = t>1 ? (rest>=step ? rest : snap(t)) : 1;
-  var slider = t>1;
-  var val=t>1 ? Math.min(maxV, Math.max(step, snap(t/10))) : 1;
+  var val = t>1 ? Math.min(maxV, Math.max(step, snap(t/10))) : 1;
   var quick=[]; [step, snap(t/20), snap(t/10), snap(t/4)].forEach(function(v){
     if(v>=step && v<maxV && quick.indexOf(v)<0) quick.push(v); });
   quick.sort(function(a,b){ return a-b; }); quick=quick.slice(0,4);
-  var who=ME||S.players[0].id;
+
+  var sel={}; sel[(ME && byId(S.players,ME)) ? ME : S.players[0].id]=true;
+  var det={}; S.players.forEach(function(p){ det[p.id]= t>1 ? Math.max(step, snap(t/10)) : 1; });
+  AS={ch:ch, t:t, step:step, maxV:maxV, mode:'egal', sel:sel, det:det};
+
   // qui a déjà mis la main à la pâte, et combien
   var by={}, order=[];
   S.events.forEach(function(e){
@@ -860,37 +879,103 @@ function addSheet(chId){
     var pl=byId(S.players,pid); if(!pl) return null;
     return esc(pl.name) + (t>1 ? ' <b class="mono">'+fmtQ(by[pid])+'</b>\u202f'+esc(ch.unit||'') : '');
   }).filter(Boolean);
+
   sheet(esc(ch.cat||'Défi'), esc(ch.title),
     '<div class="stack-form">' +
       (already.length ? '<p class="shared">'+ic('users')+'<span>Déjà marqué par '+already.join(' · ')+
         ' — chacun peut ajouter sa part.</span></p>' : '') +
-      '<div class="fld"><label>Qui marque</label><div class="pplRow" id="whoRow">' +
-        S.players.map(function(p){ return '<button type="button" data-w="'+p.id+'" aria-pressed="'+(p.id===who)+'">'+ava(p,'sm')+esc(p.name)+'</button>'; }).join('') +
+      '<div class="fld"><div class="lblRow"><label>Qui marque</label>' +
+        (S.players.length>1 ? '<button type="button" class="lnk" id="whoAll">Tout le monde</button>' : '') + '</div>' +
+        '<div class="pplRow" id="whoRow">' + S.players.map(function(p){
+          return '<button type="button" data-w="'+p.id+'" aria-pressed="'+(sel[p.id]?'true':'false')+'">' +
+            ava(p,'sm')+esc(p.name)+'</button>'; }).join('') + '</div></div>' +
+      '<div class="fld" id="modeRow" hidden><label>Répartition</label><div class="seg">' +
+        '<button type="button" data-mode="egal" aria-pressed="true">À parts égales</button>' +
+        '<button type="button" data-mode="detail" aria-pressed="false">Détail par joueur</button>' +
       '</div></div>' +
-      (slider ?
-        '<div class="fld"><label>Quantité ajoutée</label>' +
+      '<div class="fld" id="qBlock"'+(t>1?'':' hidden')+'>' +
+        (t>1 ?
+          '<label id="qLbl">Quantité ajoutée</label>' +
           '<div class="qty"><b id="qV">'+fmtQ(val)+'</b><span>'+esc(ch.unit||'')+'</span></div>' +
           '<input type="range" id="qR" min="'+step+'" max="'+maxV+'" step="'+step+'" value="'+val+'" aria-label="Quantité" />' +
           '<div class="quick">' +
-            quick.map(function(v){
-              return '<button type="button" class="btn qt" data-q="'+v+'">+'+fmtQ(v)+'</button>'; }).join('') +
+            quick.map(function(v){ return '<button type="button" class="btn qt" data-q="'+v+'">+'+fmtQ(v)+'</button>'; }).join('') +
             '<button type="button" class="btn qt" data-q="'+maxV+'">'+(rest>=step?'Reste':'Objectif')+' ('+fmtQ(maxV)+')</button>' +
-          '</div>' +
-          '<div class="qtyPts" id="qP"></div>' +
-        '</div>'
-        : '<div class="qtyPts">'+(hasPts(ch) ? 'Vaut '+fmtPts(ptsFor(ch, t>1?maxV:1))+' points' : 'Points à définir')+'</div>') +
-      '<button class="btn pri full" id="doAdd" data-ch="'+chId+'" data-qty="'+(t>1?maxV:1)+'">Valider</button>' +
+          '</div>' : '') +
+      '</div>' +
+      '<div class="fld" id="detBlock" hidden><label>Part de chacun</label>' +
+        S.players.map(function(p){
+          return '<div class="dRow" data-dr="'+p.id+'" hidden>'+ava(p,'sm')+'<span class="nm">'+esc(p.name)+'</span>' +
+            '<button type="button" class="stepBtn" data-dstep="'+p.id+'|-1" aria-label="Moins">\u2212</button>' +
+            '<b class="v" id="dv-'+p.id+'">'+fmtQ(det[p.id])+'</b><span class="u">'+esc(ch.unit||'')+'</span>' +
+            '<button type="button" class="stepBtn" data-dstep="'+p.id+'|1" aria-label="Plus">+</button></div>';
+        }).join('') +
+      '</div>' +
+      '<div class="qtyPts" id="asSum"></div>' +
+      '<button class="btn pri full" id="doAdd">Valider</button>' +
     '</div>');
   var r=$('#qR');
-  if(r){
-    var upd=function(){
-      var v=parseFloat(r.value);
-      $('#qV').textContent=fmtQ(v);
-      r.style.setProperty('--pct', ((v-step)/Math.max(0.0001,(maxV-step))*100).toFixed(1));
-      $('#qP').textContent = hasPts(ch) ? '= ' + fmtPts(ptsFor(ch,v)) + ' points' : 'Points à définir';
-    };
-    r.addEventListener('input',upd); upd();
+  if(r) r.addEventListener('input', asUpd);
+  asUpd();
+}
+// Ce que la feuille d'ajout va écrire : un apport par joueur sélectionné.
+function asParts(){
+  if(!AS) return [];
+  var ids=S.players.filter(function(p){ return AS.sel[p.id]; }).map(function(p){ return p.id; });
+  if(!ids.length) return [];
+  var r=$('#qR');
+  var q = AS.t>1 ? (r ? parseFloat(r.value) : AS.step) : 1;
+  if(ids.length>1 && AS.mode==='detail')
+    return ids.map(function(id){ return {playerId:id, qty:AS.det[id]||0}; })
+              .filter(function(x){ return x.qty>0; });
+  if(ids.length>1){
+    // parts égales : la quantité saisie est celle du groupe, le reste de division
+    // va au premier pour que le total tombe juste
+    var each=Math.round(q/ids.length*100)/100;
+    var parts=ids.map(function(id){ return {playerId:id, qty:each}; });
+    var diff=Math.round((q-each*ids.length)*100)/100;
+    if(diff) parts[0].qty=Math.round((parts[0].qty+diff)*100)/100;
+    return parts;
   }
+  return [{playerId:ids[0], qty:q}];
+}
+function asUpd(){
+  if(!AS || $('#scrim').hidden) return;
+  var n=S.players.filter(function(p){ return AS.sel[p.id]; }).length;
+  var detail = n>1 && AS.mode==='detail';
+  var mr=$('#modeRow'); if(mr) mr.hidden = n<2;
+  var qb=$('#qBlock'); if(qb) qb.hidden = detail || AS.t<=1;
+  var db=$('#detBlock'); if(db) db.hidden = !detail;
+  var lbl=$('#qLbl'); if(lbl) lbl.textContent = n>1 ? 'Quantité ajoutée (pour le groupe)' : 'Quantité ajoutée';
+  S.players.forEach(function(p){
+    var row=document.querySelector('[data-dr="'+p.id+'"]');
+    if(row) row.hidden = !AS.sel[p.id];
+    var v=document.getElementById('dv-'+p.id);
+    if(v) v.textContent=fmtQ(AS.det[p.id]||0);
+  });
+  var r=$('#qR');
+  if(r){
+    var cur=parseFloat(r.value);
+    var qv=$('#qV'); if(qv) qv.textContent=fmtQ(cur);
+    r.style.setProperty('--pct', ((cur-AS.step)/Math.max(0.0001,(AS.maxV-AS.step))*100).toFixed(1));
+  }
+  var parts=asParts();
+  var total=Math.round(parts.reduce(function(a,x){ return a+x.qty; },0)*100)/100;
+  var sum;
+  if(!parts.length) sum='Sélectionnez au moins un joueur';
+  else {
+    var head = AS.t>1
+      ? '+'+fmtQ(total)+'\u202f'+(AS.ch.unit||'')+' au défi'
+      : (n>1 && AS.mode==='egal' ? 'Validé ensemble' : '+'+fmtQ(total)+' validation'+(total>1?'s':''));
+    var tail = !hasPts(AS.ch) ? 'points à définir'
+      : parts.map(function(x){
+          var pl=byId(S.players,x.playerId);
+          return (n>1 ? esc(pl?pl.name:'')+' ' : '') + fmtPts(ptsFor(AS.ch,x.qty)) + ' pts';
+        }).join(' · ');
+    sum = head + ' · ' + tail;
+  }
+  $('#asSum').textContent=sum;
+  $('#doAdd').disabled = !parts.length || total<=0;
 }
 function chSheet(ch){
   var c=cats(), e=ch||{};
@@ -966,25 +1051,39 @@ function recapSheet(){
 
 /* ================= actions ================= */
 function award(chId, playerId, qty, ptsOverride, label){
+  awardMany(chId, [{playerId:playerId, qty:qty}], ptsOverride, label);
+}
+// Une action peut créditer plusieurs joueurs d'un coup : un événement par
+// participant, écrits en un seul lot, annulables ensemble.
+function awardMany(chId, parts, ptsOverride, label){
   var ch = chId ? byId(S.challenges,chId) : null;
   var before = ch ? done(ch,progress()) : false;
-  var ev = {id:uid(), chId:chId||null, playerId:playerId,
-    cat: ch ? (ch.cat||'Divers') : 'Divers',
-    title: ch ? ch.title : (label||'Ajustement'),
-    unit: ch ? (ch.unit||'fois') : '',
-    qty: qty||0,
-    points: ptsOverride!=null ? ptsOverride : (ch ? ptsFor(ch,qty||1) : 0),
-    at: Date.now()};
-  put('events', ev);
-  var p=byId(S.players,playerId);
-  if(ch && !before && done(ch,progress())) toast('Défi validé — ' + ch.title, ev.id);
-  else if(ch && !hasPts(ch)) toast('Progression enregistrée · points à définir', ev.id);
-  else toast((p?p.name+' ':'') + (ev.points>0?'+':'') + fmtPts(ev.points) + ' pts', ev.id);
+  var now=Date.now(), ops=[], ids=[];
+  parts.forEach(function(pt, i){
+    if(!pt || !pt.playerId) return;
+    if(!pt.qty && ptsOverride==null) return;
+    var ev = {id:uid(), chId:chId||null, playerId:pt.playerId,
+      cat: ch ? (ch.cat||'Divers') : 'Divers',
+      title: ch ? ch.title : (label||'Ajustement'),
+      unit: ch ? (ch.unit||'fois') : '',
+      qty: pt.qty||0,
+      points: ptsOverride!=null ? ptsOverride : (ch ? ptsFor(ch, pt.qty||0) : 0),
+      at: now+i};
+    ops.push({op:'put', coll:'events', obj:ev}); ids.push(ev.id);
+  });
+  if(!ops.length) return;
+  applyOps(ops);
+  var names = parts.map(function(pt){ var p=byId(S.players,pt.playerId); return p?p.name:''; })
+    .filter(Boolean).join(', ');
+  if(ch && !before && done(ch,progress())) toast('Défi validé — ' + ch.title, ids);
+  else if(ch && !hasPts(ch)) toast('Progression enregistrée · points à définir', ids);
+  else if(ids.length>1) toast(names + ' · ' + fmtPts(ops.reduce(function(a,x){ return a+x.obj.points; },0)) + ' pts répartis', ids);
+  else toast(names + ' ' + (ops[0].obj.points>0?'+':'') + fmtPts(ops[0].obj.points) + ' pts', ids);
 }
 function toast(msg, undo){
-  undoId = undo||null;
+  undoIds = undo ? (undo.length ? undo : [undo]) : null;
   $('#toastMsg').textContent = msg;
-  $('#toastAct').hidden = !undo;
+  $('#toastAct').hidden = !undoIds;
   $('#toast').hidden = false;
   clearTimeout(toastTimer);
   toastTimer = setTimeout(function(){ $('#toast').hidden=true; }, 4500);
@@ -1025,18 +1124,43 @@ document.addEventListener('click', function(evt){
   if(t.id==='newCh') return chSheet(null);
   if(d.add) return addSheet(d.add);
 
-  if(d.w){ t.parentNode.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed','false'); });
-    t.setAttribute('aria-pressed','true'); return; }
+  if(d.w){
+    if(!AS) return;
+    var on = t.getAttribute('aria-pressed')==='true';
+    var nSel = S.players.filter(function(p){ return AS.sel[p.id]; }).length;
+    if(on && nSel<=1) return;                 // il faut au moins un joueur
+    if(on) delete AS.sel[d.w]; else AS.sel[d.w]=true;
+    t.setAttribute('aria-pressed', on?'false':'true');
+    asUpd(); return;
+  }
+  if(t.id==='whoAll'){
+    if(!AS) return;
+    S.players.forEach(function(p){ AS.sel[p.id]=true; });
+    $('#whoRow').querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed','true'); });
+    asUpd(); return;
+  }
+  if(d.mode){
+    if(!AS) return;
+    AS.mode=d.mode;
+    t.parentNode.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed', String(b.dataset.mode===d.mode)); });
+    asUpd(); return;
+  }
+  if(d.dstep){
+    if(!AS) return;
+    var bits=d.dstep.split('|'), pid=bits[0], dir=parseFloat(bits[1]);
+    var stepv = AS.t>1 ? AS.step : 1;
+    AS.det[pid]=Math.max(0, Math.round(((AS.det[pid]||0) + dir*stepv)*100)/100);
+    asUpd(); return;
+  }
   if(d.sc){ t.parentNode.querySelectorAll('button').forEach(function(b){ b.setAttribute('aria-pressed','false'); });
     t.setAttribute('aria-pressed','true'); return; }
-  if(d.q){ var r=$('#qR'); if(r){ r.value=d.q; r.dispatchEvent(new Event('input')); } return; }
+  if(d.q){ var r=$('#qR'); if(r){ r.value=d.q; asUpd(); } return; }
 
   if(t.id==='doAdd'){
-    var ch=byId(S.challenges,d.ch); if(!ch) return;
-    var w=$('#whoRow').querySelector('[aria-pressed="true"]');
-    var r2=$('#qR'), q = r2 ? parseFloat(r2.value) : (parseFloat(t.dataset.qty)||1);
+    if(!AS) return;
+    var parts=asParts(), chId=AS.ch.id;
     closeSheet();
-    return award(ch.id, w.dataset.w, q);
+    return awardMany(chId, parts);
   }
 
   if(d.menu){
@@ -1154,7 +1278,10 @@ document.addEventListener('click', function(evt){
     }
     t.dataset.armed='1'; t.textContent='Confirmer l’effacement'; return;
   }
-  if(t.id==='toastAct'){ if(undoId){ drop('events',undoId); undoId=null; } $('#toast').hidden=true; return; }
+  if(t.id==='toastAct'){
+    if(undoIds){ applyOps(undoIds.map(function(id){ return {op:'drop', coll:'events', id:id}; })); undoIds=null; }
+    $('#toast').hidden=true; return;
+  }
 });
 
 document.addEventListener('input', function(e){

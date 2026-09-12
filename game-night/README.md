@@ -69,6 +69,11 @@ Les bonus et malus manuels (menu d'un joueur) s'ajoutent hors défi.
 - **Un défi n'appartient à personne.** Tout le monde peut contribuer au même défi,
   avant comme après que l'objectif soit atteint : la feuille d'ajout rappelle qui a
   déjà marqué et combien, et chacun est payé au prorata de ce qu'il a fait.
+- **Plusieurs participants d'un coup.** Sélectionnez qui a participé, puis choisissez
+  la répartition : *à parts égales* (la quantité saisie est celle du groupe, divisée
+  entre les sélectionnés — un 3v3 gagné ensemble se valide une fois et crédite les
+  trois) ou *détail par joueur* (la part de chacun, au pas de l'unité). Une action à
+  plusieurs s'annule d'un seul geste.
 - Un défi sans valeur se valide quand même : la progression est gardée, les points suivront.
 - Au-delà de dix défis, un champ de recherche apparaît ; il ignore les accents.
 - Les écritures partent en lot : charger un pack de vingt défis, ou supprimer un
