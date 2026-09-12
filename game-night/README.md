@@ -47,6 +47,14 @@ puis stockage local — et l'indique sous le titre.
 
 ## Comment sont comptés les points
 
+**Aucun barème n'est imposé.** Les défis des packs arrivent sans valeur (`—`) :
+c'est à vous de décider ce que vaut chaque défi. Le filtre « À chiffrer » liste
+ceux qu'il reste à évaluer.
+
+Les points d'une action sont recalculés depuis le défi, donc fixer ou changer un
+barème met à jour tout l'historique : une progression enregistrée avant que vous
+ayez décidé de sa valeur est comptée dès que vous la renseignez.
+
 Un défi a un objectif (`20`), une unité (`km`) et des points. Deux modes :
 
 - **Au total** — les points sont répartis au prorata de l'objectif :
@@ -58,6 +66,7 @@ Les bonus et malus manuels (menu d'un joueur) s'ajoutent hors défi.
 
 ## Détails utiles
 
+- Un défi sans valeur se valide quand même : la progression est gardée, les points suivront.
 - Au-delà de dix défis, un champ de recherche apparaît ; il ignore les accents.
 - Les écritures partent en lot : charger un pack de vingt défis, ou supprimer un
   joueur et toutes ses actions, ne fait qu'un appel réseau et un seul rendu.

@@ -173,6 +173,7 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 .row .side{display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex:0 0 auto}
 .row .pts{font-family:var(--mono);font-size:15px;letter-spacing:-.03em;color:var(--text)}
 .row .pts em{font-style:normal;font-size:10px;color:var(--text-3);margin-left:2px}
+.row .pts .todo{color:var(--text-3);font-weight:400}
 .row.done h3{color:var(--text-2)}
 .row .sideBtns{display:flex;gap:5px}
 .addBtn{width:36px;height:36px;border-radius:9px;background:var(--inv-bg);color:var(--inv-text);display:grid;place-items:center}
@@ -354,34 +355,34 @@ var STEPS = {km:0.5, kg:0.1, L:0.25, g:50, h:0.5, min:5};
 // [titre, détail, catégorie, points (au total), objectif, unité]
 var PACKS = [
   {id:'notre', name:'Notre liste', desc:'les 22 défis de la bande', items:[
-    ['Courir 20 km','En une ou plusieurs sorties','Sport',100,20,'km'],
-    ['200 pompes','Cumulées sur la soirée','Sport',80,200,'pompes'],
-    ['150 squats','Cumulés sur la soirée','Sport',60,150,'squats'],
-    ['75 tractions','Cumulées sur la soirée','Sport',90,75,'tractions'],
-    ['Top 1 Fortnite classé','En classé uniquement','Jeux vidéo',50,1,'fois'],
-    ['Top 1 Fall Guys','La couronne','Jeux vidéo',40,1,'fois'],
-    ['Faire un ace','Cinq frags sur le même round','Jeux vidéo',45,1,'fois'],
-    ['Gagner une game Rocket League','','Jeux vidéo',25,1,'fois'],
-    ['Valo no scope','Un kill au sniper sans viseur','Jeux vidéo',35,1,'kills'],
-    ['Valo couteau','Un kill au couteau','Jeux vidéo',40,1,'kills'],
-    ['Top 1 Apex','Champions','Jeux vidéo',50,1,'fois'],
-    ['Faire un pentakill','','Jeux vidéo',60,1,'fois'],
-    ['Pull une alt','Preuve à l’écran','Jeux vidéo',30,1,'fois'],
-    ['Un 5 cost 3 étoiles TFT','','Jeux vidéo',55,1,'fois'],
-    ['Gagner 5 retakes d’affilée','Sans en perdre un seul','Jeux vidéo',50,5,'rounds'],
-    ['Gagner 3 arena','','Jeux vidéo',35,3,'parties'],
-    ['Finir Minecraft','Le dragon, rien de moins','Jeux vidéo',100,1,'fois'],
-    ['Boire 20 bières','Sur toute la soirée','Boisson',100,20,'bières'],
-    ['2 kg de nuggets','Pesée à l’appui','Nourriture',80,2,'kg'],
-    ['Faire pleurer un gosse','Ou se faire traiter de cheater','Chaos',30,1,'fois']
+    ['Courir 20 km','En une ou plusieurs sorties','Sport',20,'km'],
+    ['200 pompes','Cumulées sur la soirée','Sport',200,'pompes'],
+    ['150 squats','Cumulés sur la soirée','Sport',150,'squats'],
+    ['75 tractions','Cumulées sur la soirée','Sport',75,'tractions'],
+    ['Top 1 Fortnite classé','En classé uniquement','Jeux vidéo',1,'fois'],
+    ['Top 1 Fall Guys','La couronne','Jeux vidéo',1,'fois'],
+    ['Faire un ace','Cinq frags sur le même round','Jeux vidéo',1,'fois'],
+    ['Gagner une game Rocket League','','Jeux vidéo',1,'fois'],
+    ['Valo no scope','Un kill au sniper sans viseur','Jeux vidéo',1,'kills'],
+    ['Valo couteau','Un kill au couteau','Jeux vidéo',1,'kills'],
+    ['Top 1 Apex','Champions','Jeux vidéo',1,'fois'],
+    ['Faire un pentakill','','Jeux vidéo',1,'fois'],
+    ['Pull une alt','Preuve à l’écran','Jeux vidéo',1,'fois'],
+    ['Un 5 cost 3 étoiles TFT','','Jeux vidéo',1,'fois'],
+    ['Gagner 5 retakes d’affilée','Sans en perdre un seul','Jeux vidéo',5,'rounds'],
+    ['Gagner 3 arena','','Jeux vidéo',3,'parties'],
+    ['Finir Minecraft','Le dragon, rien de moins','Jeux vidéo',1,'fois'],
+    ['Boire 20 bières','Sur toute la soirée','Boisson',20,'bières'],
+    ['2 kg de nuggets','Pesée à l’appui','Nourriture',2,'kg'],
+    ['Faire pleurer un gosse','Ou se faire traiter de cheater','Chaos',1,'fois']
   ]},
   {id:'ambiance', name:'Ambiance & QG', desc:'ceux qui font tourner la soirée', items:[
-    ['Commentateur','Commenter une manche comme un journaliste sportif','Social',20,1,'manches'],
-    ['DJ de service','Lancer la playlist entre deux parties','Social',15,3,'fois'],
-    ['Ravitaillement','Ramener des snacks pour tout le monde','Nourriture',30,2,'fois'],
-    ['Support technique','Régler une manette, un câble, une connexion','Social',20,3,'fois'],
-    ['Dernier debout','Être le dernier à poser sa manette','Chaos',40,1,'fois'],
-    ['Photographe','Immortaliser les moments cultes','Social',20,5,'photos']
+    ['Commentateur','Commenter une manche comme un journaliste sportif','Social',1,'manches'],
+    ['DJ de service','Lancer la playlist entre deux parties','Social',3,'fois'],
+    ['Ravitaillement','Ramener des snacks pour tout le monde','Nourriture',2,'fois'],
+    ['Support technique','Régler une manette, un câble, une connexion','Social',3,'fois'],
+    ['Dernier debout','Être le dernier à poser sa manette','Chaos',1,'fois'],
+    ['Photographe','Immortaliser les moments cultes','Social',5,'photos']
   ]}
 ];
 
@@ -413,6 +414,15 @@ function ava(p,cls){ return '<span class="ava '+(cls||'')+'" title="'+esc(p?p.na
 function norm(x){ return String(x==null?'':x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 function fmtQ(n){ return (Math.round(n*100)/100).toString().replace('.',','); }
 function stepFor(u){ return STEPS[u] || 1; }
+function hasPts(ch){ return !!(ch && ch.points!=null && ch.points>0); }
+// Les points d'une action sont recalculés depuis le défi : changer son barème
+// met à jour tout l'historique. Seuls les bonus/malus manuels portent leur valeur.
+function evPts(e){
+  if(!e) return 0;
+  if(!e.chId) return e.points||0;
+  var ch=byId(S.challenges, e.chId);
+  return ch ? ptsFor(ch, e.qty||0) : (e.points||0);
+}
 function ptsFor(ch,q){
   var p = ch.points||0;
   var v = ch.scoring==='unit' ? p*q : p*q/(ch.target||1);
@@ -562,8 +572,9 @@ function scores(){
   S.players.forEach(function(p){ m[p.id]={p:p, total:0, acts:0, byCat:{}}; out.push(m[p.id]); });
   S.events.forEach(function(e){
     var r=m[e.playerId]; if(!r) return;
-    r.total+=(e.points||0); r.acts++;
-    var c=e.cat||'Divers'; r.byCat[c]=(r.byCat[c]||0)+(e.points||0);
+    var v=evPts(e);
+    r.total+=v; r.acts++;
+    var c=e.cat||'Divers'; r.byCat[c]=(r.byCat[c]||0)+v;
   });
   out.sort(function(a,b){ return b.total-a.total || a.p.name.localeCompare(b.p.name); });
   return out;
@@ -596,7 +607,7 @@ function renderNow(){
   var d = S.meta.date ? new Date(S.meta.date+'T12:00:00') : new Date();
   $('#kicker').textContent = 'Soirée du ' + d.toLocaleDateString('fr-FR',{day:'numeric', month:'long'});
   var nDone = S.challenges.filter(function(c){ return done(c,prog); }).length;
-  var pts = S.events.reduce(function(a,e){ return a+(e.points||0); },0);
+  var pts = S.events.reduce(function(a,e){ return a+evPts(e); },0);
   $('#kpis').innerHTML =
     kpi(nDone+'/'+S.challenges.length,'Défis') + kpi(fmtPts(pts),'Points') +
     kpi(S.players.length,'Joueurs') + kpi(S.events.length,'Actions');
@@ -627,10 +638,12 @@ function renderDefis(prog){
   var list = S.challenges.slice();
   if(fState==='encours') list=list.filter(function(c){ return !done(c,prog); });
   if(fState==='faits')   list=list.filter(function(c){ return done(c,prog); });
+  if(fState==='nopts')   list=list.filter(function(c){ return !hasPts(c); });
   if(fCat!=='tous')      list=list.filter(function(c){ return (c.cat||'Divers')===fCat; });
   if(fQ){ var q=norm(fQ);
     list=list.filter(function(c){ return norm(c.title).indexOf(q)>=0 || norm(c.note).indexOf(q)>=0 || norm(c.cat).indexOf(q)>=0; }); }
 
+  var noPts = S.challenges.filter(function(c){ return !hasPts(c); }).length;
   var used={}; S.challenges.forEach(function(c){ used[c.cat||'Divers']=1; });
   var cl = cats().filter(function(c){ return used[c.name]; });
 
@@ -639,8 +652,10 @@ function renderDefis(prog){
     html += '<div class="search">'+ic('search')+'<input id="chSearch" type="search" autocomplete="off" ' +
       'placeholder="Rechercher un défi" aria-label="Rechercher un défi" value="'+esc(fQ)+'" /></div>';
   html += '<div class="filters">' +
-    [['tous','Tous'],['encours','En cours'],['faits','Validés']].map(function(f){
-      return '<button class="fc" data-fs="'+f[0]+'" aria-pressed="'+(fState===f[0])+'">'+f[1]+'</button>'; }).join('') +
+    [['tous','Tous'],['encours','En cours'],['faits','Validés']]
+      .concat(noPts ? [['nopts','À chiffrer ('+noPts+')']] : [])
+      .map(function(f){
+        return '<button class="fc" data-fs="'+f[0]+'" aria-pressed="'+(fState===f[0])+'">'+f[1]+'</button>'; }).join('') +
     (cl.length>1 ? '<button class="fc" data-fc="tous" aria-pressed="'+(fCat==='tous')+'">Toutes</button>' +
       cl.map(function(c){
         return '<button class="fc" data-fc="'+esc(c.name)+'" aria-pressed="'+(fCat===c.name)+'">' +
@@ -685,7 +700,9 @@ function rowHtml(ch,prog,cm){
       '</div>' : '') +
     '</div>' +
     '<div class="side">' +
-      '<div class="pts">'+(ch.points||0)+'<em>'+(ch.scoring==='unit'?'/'+esc(ch.unit||'u'):'pts')+'</em></div>' +
+      '<div class="pts">' + (hasPts(ch)
+        ? ch.points+'<em>'+(ch.scoring==='unit'?'/'+esc(ch.unit||'u'):'pts')+'</em>'
+        : '<span class="todo" title="Points à définir">—</span>') + '</div>' +
       '<div class="sideBtns">' +
         '<button class="btn gh qt" data-menu="'+ch.id+'" aria-label="Options">'+ic('dots')+'</button>' +
         '<button class="addBtn" data-add="'+ch.id+'" aria-label="Ajouter une progression">'+ic('plus')+'</button>' +
@@ -737,7 +754,8 @@ function renderStats(sc){
   S.events.forEach(function(e){
     var c=e.cat||'Divers';
     if(!ct[c]) ct[c]={total:0, by:{}};
-    ct[c].total+=(e.points||0); ct[c].by[e.playerId]=(ct[c].by[e.playerId]||0)+(e.points||0);
+    var v=evPts(e);
+    ct[c].total+=v; ct[c].by[e.playerId]=(ct[c].by[e.playerId]||0)+v;
   });
   var cl = cats().filter(function(c){ return ct[c.name]; });
   Object.keys(ct).forEach(function(n){ if(!cl.some(function(c){ return c.name===n; })) cl.push({name:n, slot:7}); });
@@ -747,7 +765,7 @@ function renderStats(sc){
     var rows = Object.keys(ct[c.name].by).map(function(pid){ return {p:byId(S.players,pid), v:ct[c.name].by[pid]}; })
       .filter(function(r){ return r.p; }).sort(function(a,b){ return b.v-a.v; });
     if(!rows.length) return '';
-    var mx=rows[0].v;
+    var mx=Math.max(1, rows[0].v);
     return '<div class="cat"><div class="ch"><i class="dot" style="--c:var(--c'+(c.slot%8)+')"></i><b>'+esc(c.name)+'</b>' +
       '<span class="tot">'+fmtPts(ct[c.name].total)+' pts</span></div>' +
       rows.slice(0,4).map(function(r){
@@ -774,9 +792,10 @@ function renderStats(sc){
     S.events.slice(0,60).map(function(e){
       var p=byId(S.players,e.playerId), t=new Date(e.at||Date.now());
       var q = e.chId && e.qty ? fmtQ(e.qty)+' '+esc(e.unit||'') + ' · ' : '';
+      var v = evPts(e);
       return '<div class="ev">' + ava(p,'sm') +
         '<span class="t"><b>'+esc(p?p.name:'Joueur retiré')+'</b><span>'+q+esc(e.title||'Ajustement')+'</span></span>' +
-        '<span class="p'+((e.points||0)<0?' neg':'')+'">'+((e.points||0)>0?'+':'')+fmtPts(e.points||0)+'</span>' +
+        '<span class="p'+(v<0?' neg':'')+'">'+(v===0&&e.chId ? '—' : (v>0?'+':'')+fmtPts(v))+'</span>' +
         '<span class="tm">'+('0'+t.getHours()).slice(-2)+':'+('0'+t.getMinutes()).slice(-2)+'</span>' +
         '<button class="btn gh qt" data-delev="'+e.id+'" aria-label="Annuler">'+ic('undo')+'</button></div>';
     }).join('') + '</div>';
@@ -833,7 +852,7 @@ function addSheet(chId){
           '</div>' +
           '<div class="qtyPts" id="qP"></div>' +
         '</div>'
-        : '<div class="qtyPts">Vaut '+fmtPts(ptsFor(ch, t>1?maxV:1))+' points</div>') +
+        : '<div class="qtyPts">'+(hasPts(ch) ? 'Vaut '+fmtPts(ptsFor(ch, t>1?maxV:1))+' points' : 'Points à définir')+'</div>') +
       '<button class="btn pri full" id="doAdd" data-ch="'+chId+'" data-qty="'+(t>1?maxV:1)+'">Valider</button>' +
     '</div>');
   var r=$('#qR');
@@ -842,7 +861,7 @@ function addSheet(chId){
       var v=parseFloat(r.value);
       $('#qV').textContent=fmtQ(v);
       r.style.setProperty('--pct', ((v-step)/Math.max(0.0001,(maxV-step))*100).toFixed(1));
-      $('#qP').textContent = '= ' + fmtPts(ptsFor(ch,v)) + ' points';
+      $('#qP').textContent = hasPts(ch) ? '= ' + fmtPts(ptsFor(ch,v)) + ' points' : 'Points à définir';
     };
     r.addEventListener('input',upd); upd();
   }
@@ -863,7 +882,7 @@ function chSheet(ch){
           '<datalist id="unitList">'+UNITS.map(function(u){ return '<option>'+u+'</option>'; }).join('')+'</datalist></div>' +
       '</div>' +
       '<div class="g2">' +
-        '<div class="fld"><label for="chPts">Points</label><input class="inp mono" id="chPts" type="number" min="1" max="9999" value="'+(e.points||30)+'" /></div>' +
+        '<div class="fld"><label for="chPts">Points</label><input class="inp mono" id="chPts" type="number" min="0" max="9999" placeholder="à définir" value="'+(e.points!=null?e.points:'')+'" /></div>' +
         '<div class="fld"><label>Comptés</label><div class="seg" id="chScore">' +
           '<button type="button" data-sc="total" aria-pressed="'+((e.scoring||'total')==='total')+'">Au total</button>' +
           '<button type="button" data-sc="unit" aria-pressed="'+(e.scoring==='unit')+'">Par unité</button></div></div>' +
@@ -902,7 +921,7 @@ function recapSheet(){
   L.push('CLASSEMENT');
   sc.forEach(function(r,i){ L.push((i+1)+'. '+r.p.name+' — '+fmtPts(r.total)+' pts ('+r.acts+' actions)'); });
   var ct={};
-  S.events.forEach(function(e){ var c=e.cat||'Divers'; if(!ct[c]) ct[c]={}; ct[c][e.playerId]=(ct[c][e.playerId]||0)+(e.points||0); });
+  S.events.forEach(function(e){ var c=e.cat||'Divers'; if(!ct[c]) ct[c]={}; ct[c][e.playerId]=(ct[c][e.playerId]||0)+evPts(e); });
   var mv=[];
   cats().concat([{name:'Divers'}]).forEach(function(c){
     if(!ct[c.name]) return;
@@ -933,6 +952,7 @@ function award(chId, playerId, qty, ptsOverride, label){
   put('events', ev);
   var p=byId(S.players,playerId);
   if(ch && !before && done(ch,progress())) toast('Défi validé — ' + ch.title, ev.id);
+  else if(ch && !hasPts(ch)) toast('Progression enregistrée · points à définir', ev.id);
   else toast((p?p.name+' ':'') + (ev.points>0?'+':'') + fmtPts(ev.points) + ' pts', ev.id);
 }
 function toast(msg, undo){
@@ -952,7 +972,7 @@ function addPack(id){
     if(have[it[0]]) return;
     added = ensureCat(it[2], true) || added;
     ops.push({op:'put', coll:'challenges', obj:{id:uid(), title:it[0], note:it[1], cat:it[2],
-      points:it[3], scoring:'total', target:it[4], unit:it[5], createdAt:now+i}});
+      points:null, scoring:'total', target:it[3], unit:it[4], createdAt:now+i}});
   });
   if(added) setMeta({cats:cats()});
   applyOps(ops);
@@ -1139,7 +1159,8 @@ document.addEventListener('submit', function(e){
     obj.title=title; obj.note=$('#chNote').value.trim(); obj.cat=cat;
     obj.target=Math.max(0.1, parseFloat($('#chTarget').value)||1);
     obj.unit=$('#chUnit').value.trim()||'fois';
-    obj.points=Math.max(1, parseInt($('#chPts').value,10)||10);
+    var pv=$('#chPts').value.trim();
+    obj.points = pv==='' ? null : Math.max(0, parseInt(pv,10)||0);
     obj.scoring=$('#chScore').querySelector('[aria-pressed="true"]').dataset.sc;
     put('challenges', obj); closeSheet(); toast(id?'Défi mis à jour':'Défi ajouté');
     return;
