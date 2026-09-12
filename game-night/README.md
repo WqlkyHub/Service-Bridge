@@ -129,6 +129,14 @@ en deux ou trois colonnes, les joueurs en fiches, et une colonne de droite
 collante garde le classement live et les dernières actions sous les yeux quel
 que soit l'onglet ouvert.
 
+## Identité de l'appareil
+
+À chaque chargement, l'app demande qui tient le téléphone : la liste des joueurs
+si personne n'est choisi, une confirmation (« C'est toujours toi ? ») sinon.
+C'est le garde-fou contre l'erreur la plus facile — marquer des points pour le
+voisin. Le choix est gardé dans le navigateur et se change à tout moment par la
+puce en haut de l'écran.
+
 ## Détails utiles
 
 - **Un défi n'appartient à personne.** Tout le monde peut contribuer au même défi,

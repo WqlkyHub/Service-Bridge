@@ -302,6 +302,10 @@ select.inp{appearance:none;background-image:linear-gradient(45deg,transparent 50
 .pplRow button{display:inline-flex;align-items:center;gap:7px;height:38px;padding:0 12px 0 6px;border-radius:999px;
   border:1px solid var(--line);background:var(--surface);font-size:13.5px}
 .pplRow button[aria-pressed="true"]{border-color:var(--text);background:var(--surface-2);font-weight:500}
+.pplRow.big{gap:10px}
+.pplRow.big button{height:auto;flex-direction:column;gap:8px;padding:14px 10px;border-radius:16px;
+  flex:1 1 96px;min-width:96px;justify-content:center;font-size:14.5px}
+.pplRow.big button[aria-pressed="true"]{border-color:var(--text);box-shadow:inset 0 0 0 1px var(--text)}
 
 /* curseur de quantité */
 .qty{display:flex;align-items:baseline;gap:8px;justify-content:center;padding:6px 0 2px}
@@ -440,7 +444,7 @@ var P = {
 function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>'; }
 
 /* ================= données de départ ================= */
-var VERSION = '2026-09-12 · 16h30';   // repère de version de l'app
+var VERSION = '2026-09-12 · 17h15';   // repère de version de l'app
 var DEF_CATS = ['TFT','Sport','LOL','VALO','Autres jeux','Nutrition'];
 // Proposition de barème : [valeur du défi, prime versée quand l'objectif est
 // atteint]. La valeur se partage au prorata des unités faites ; la prime
@@ -500,7 +504,7 @@ var PACKS = [
 var LS='manettedor.v2', LS_OLD='manettedor.v1', LS_ME='manettedor.me';
 var S = {meta:{name:"La Manette d'Or", date:new Date().toISOString().slice(0,10), cats:null}, players:[], challenges:[], events:[]};
 var MODE='local', DB=null, ME=null, LAN=null;
-var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null, loaded=false, autoDone=false;
+var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null, loaded=false, autoDone=false, idAsked=false;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -749,12 +753,16 @@ function renderNow(){
   $('#kpis').innerHTML =
     kpi(nDone+'/'+S.challenges.length,'Défis') + kpi(fmtPts(pts),'Points') +
     kpi(S.players.length,'Joueurs') + kpi(S.events.length,'Actions');
-  var me = ME ? byId(S.players,ME) : null; if(!me) ME=null;
+  // On n'oublie l'identité que si le joueur a vraiment disparu : au rechargement,
+  // le premier rendu a lieu avant l'arrivée des données et effaçait ME au passage.
+  var me = ME ? byId(S.players,ME) : null;
+  if(ME && !me && loaded && S.players.length){ ME=null; try{ localStorage.removeItem(LS_ME); }catch(e){} }
   $('#meAva').textContent = me ? initials(me.name) : '?';
   $('#meAva').className = 'ava' + (me ? ' on' : '');
   $('#meName').textContent = me ? me.name : 'Je suis…';
   if(!$('#gearBtn').firstChild) $('#gearBtn').innerHTML = ic('gear');
   renderRail(sc);
+  maybeAskIdentity();
   if(!dirty[curView]) return;
   dirty[curView]=false;
   if(curView==='defis') renderDefis(prog);
@@ -1236,6 +1244,27 @@ function chSheet(ch){
       '<input type="hidden" id="chId" value="'+esc(e.id||'')+'" />' +
     '</form>');
 }
+// À chaque chargement (rechargement, mise à jour, reprise), on demande qui
+// tient l'appareil : marquer pour le mauvais joueur est l'erreur la plus facile.
+function identitySheet(){
+  if(!S.players.length) return;
+  var me = ME ? byId(S.players, ME) : null;
+  sheet('Cet appareil', me ? 'C’est toujours toi ?' : 'Qui tient cet appareil ?',
+    '<p class="shared">'+ic('users')+'<span>' +
+      (me ? 'Tout ce que tu valideras sera compté pour <b>'+esc(me.name)+'</b>.'
+          : 'Choisis ton prénom : les défis que tu valideras seront comptés pour toi.') +
+    '</span></p>' +
+    '<div class="pplRow big" style="margin-top:14px">' + S.players.map(function(pl){
+      return '<button type="button" data-setme="'+pl.id+'" aria-pressed="'+(pl.id===ME)+'">' +
+        ava(pl,'lg')+esc(pl.name)+'</button>'; }).join('') + '</div>' +
+    (me ? '<button class="btn pri full" data-close="1" style="margin-top:16px">Oui, c’est moi — '+esc(me.name)+'</button>'
+        : '<p class="tiny" style="margin-top:12px;text-align:center">Tu pourras en changer à tout moment en haut de l’écran.</p>'));
+}
+function maybeAskIdentity(){
+  if(idAsked || !loaded || !S.players.length) return;
+  idAsked = true;
+  identitySheet();
+}
 function settingsSheet(){
   var lanTxt = MODE==='lan' ? 'Réseau local — les autres rejoignent sur <b class="mono">'+esc(location.host)+'</b>'
     : MODE==='cloud' ? 'Synchro en direct — partagez le lien de cette page.'
@@ -1473,7 +1502,13 @@ document.addEventListener('click', function(evt){
       '<button class="btn full" data-editp="'+p2.id+'">'+ic('edit')+'Renommer</button>' +
       '<button class="btn full dg" data-delp="'+p2.id+'">'+ic('trash')+'Retirer</button></div>');
   }
-  if(d.setme){ ME=d.setme; try{ localStorage.setItem(LS_ME,ME); }catch(e){} closeSheet(); return render(); }
+  if(d.setme){
+    ME=d.setme; try{ localStorage.setItem(LS_ME,ME); }catch(e){}
+    var pMe=byId(S.players,ME);
+    closeSheet(); render();
+    if(pMe) toast('Cet appareil marque pour ' + pMe.name);
+    return;
+  }
   if(d.editp){
     var p3=byId(S.players,d.editp);
     return sheet('Joueur','Renommer',
@@ -1510,9 +1545,7 @@ document.addEventListener('click', function(evt){
 
   if(t.id==='meBtn'){
     if(!S.players.length){ toast('Ajoutez d’abord des joueurs'); return go('joueurs'); }
-    return sheet('Cet appareil','Je suis…',
-      '<div class="pplRow">' + S.players.map(function(p){
-        return '<button data-setme="'+p.id+'">'+ava(p,'sm')+esc(p.name)+'</button>'; }).join('') + '</div>');
+    return identitySheet();
   }
   if(t.id==='baremeBtn') return applyBareme();
   if(t.id==='gearBtn'||t.id==='gear2') return settingsSheet();
