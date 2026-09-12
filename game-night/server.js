@@ -42,6 +42,7 @@ const UPDATABLE = [
 ];
 const MAX_BODY = 2 * 1024 * 1024;
 const MAX_EVENTS = 2000;   // le journal d'une soirée reste borné
+const UPDATE_EVERY = Number(process.env.UPDATE_MS || 10 * 60 * 1000);   // vérification périodique des nouvelles versions
 
 let state = load();
 let rev = 0;
@@ -183,6 +184,7 @@ const server = http.createServer(async (req, res) => {
 
   if (url === '/api/update' && req.method === 'POST') {
     const result = await selfUpdate();
+    if (result.updated.length) send('version', { updated: result.updated, restart: result.restart });
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify(result));
   }
@@ -244,6 +246,17 @@ async function start() {
   else if (up.updated.length) console.log('  Mis à jour : ' + up.updated.join(', '));
   else console.log('  Déjà à jour.');
   if (up.restart) console.log('  ⚠ Le serveur lui-même a été mis à jour : fermez et relancez pour en profiter.');
+
+  // Une nouvelle version publiée arrive toute seule sur les appareils ouverts.
+  setInterval(async () => {
+    try {
+      const up = await selfUpdate();
+      if (up.updated.length) {
+        console.log('  Mise à jour installée : ' + up.updated.join(', '));
+        send('version', { updated: up.updated, restart: up.restart });
+      }
+    } catch (e) {}
+  }, UPDATE_EVERY);
 
   server.listen(PORT, () => {
     const lines = addresses().map(ip => '  http://' + ip + ':' + PORT + '   (les autres appareils)');

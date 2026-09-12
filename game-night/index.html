@@ -472,7 +472,7 @@ var PACKS = [
 var LS='manettedor.v2', LS_OLD='manettedor.v1', LS_ME='manettedor.me';
 var S = {meta:{name:"La Manette d'Or", date:new Date().toISOString().slice(0,10), cats:null}, players:[], challenges:[], events:[]};
 var MODE='local', DB=null, ME=null, LAN=null;
-var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, AS=null;
+var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -617,6 +617,15 @@ function startLan(){
       try{ var p=JSON.parse(m.data); LAN.rev=p.rev; applyRemote(p.state); }catch(e){}
     });
     es.addEventListener('peers', function(m){ try{ LAN.peers=JSON.parse(m.data).peers; status('lan'); }catch(e){} });
+    es.addEventListener('version', function(m){
+      var d; try{ d=JSON.parse(m.data); }catch(e){ return; }
+      if(d.restart) return toast('Serveur mis à jour — fermez et relancez la fenêtre du serveur', null, 'Compris', function(){});
+      if(!d.updated || d.updated.indexOf('index.html')<0) return;
+      var busy = !$('#scrim').hidden || /^(INPUT|TEXTAREA|SELECT)$/.test((document.activeElement||{}).tagName||'');
+      if(busy) return toast('Nouvelle version disponible', null, 'Recharger', function(){ location.reload(); });
+      toast('Nouvelle version — rechargement…');
+      setTimeout(function(){ location.reload(); }, 1600);
+    });
     es.onerror = function(){ status('lan-off'); };
     es.onopen = function(){ status('lan'); };
     status('lan');
@@ -1215,13 +1224,16 @@ function awardMany(chId, parts, ptsOverride, label){
   else if(ids.length>1) toast(names + ' · ' + fmtPts(ops.reduce(function(a,x){ return a+x.obj.points; },0)) + ' pts répartis', ids);
   else toast(names + ' ' + (ops[0].obj.points>0?'+':'') + fmtPts(ops[0].obj.points) + ' pts', ids);
 }
-function toast(msg, undo){
+function toast(msg, undo, label, cb){
   undoIds = undo ? (undo.length ? undo : [undo]) : null;
+  toastCb = cb || null;
   $('#toastMsg').textContent = msg;
-  $('#toastAct').hidden = !undoIds;
+  var act=$('#toastAct');
+  act.hidden = !(undoIds || toastCb);
+  act.textContent = toastCb ? (label||'OK') : 'Annuler';
   $('#toast').hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(function(){ $('#toast').hidden=true; }, 4500);
+  if(!toastCb) toastTimer = setTimeout(function(){ $('#toast').hidden=true; }, 4500);
 }
 function addPack(id){
   var pk=null; PACKS.forEach(function(p){ if(p.id===id) pk=p; });
@@ -1464,8 +1476,11 @@ document.addEventListener('click', function(evt){
     t.dataset.armed='1'; t.textContent='Confirmer l’effacement'; return;
   }
   if(t.id==='toastAct'){
+    var cb=toastCb; toastCb=null;
     if(undoIds){ applyOps(undoIds.map(function(id){ return {op:'drop', coll:'events', id:id}; })); undoIds=null; }
-    $('#toast').hidden=true; return;
+    $('#toast').hidden=true;
+    if(cb) cb();
+    return;
   }
 });
 
