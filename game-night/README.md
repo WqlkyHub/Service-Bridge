@@ -41,8 +41,13 @@ n'est réécrit que s'il diffère et qu'il passe un contrôle de taille et de
 contenu, pour qu'une coupure ou une page d'erreur ne puisse pas remplacer une
 version qui marche. La soirée en cours (`soiree.json`) n'est jamais touchée.
 
-Sans relancer le serveur, **Réglages → Mettre à jour l'app** fait la même chose
-et recharge la page. Si c'est `server.js` lui-même qui a changé, l'app le
+Le serveur revérifie ensuite toutes les dix minutes (`UPDATE_MS` pour changer
+l'intervalle). Quand une nouvelle version arrive, **les appareils ouverts se
+rechargent d'eux-mêmes** — sauf celui dont quelqu'un est en train de remplir un
+champ, qui reçoit un bouton « Recharger » plutôt que de perdre sa saisie.
+
+Sans attendre, **Réglages → Mettre à jour l'app** fait la même chose
+immédiatement. Si c'est `server.js` lui-même qui a changé, l'app le
 signale : il faut fermer et relancer la fenêtre du serveur.
 
 `NO_UPDATE=1 node server.js` désactive la mise à jour — à utiliser si vous
