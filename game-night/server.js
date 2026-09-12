@@ -260,7 +260,12 @@ async function start() {
 
   server.listen(PORT, () => {
     const lines = addresses().map(ip => '  http://' + ip + ':' + PORT + '   (les autres appareils)');
-    console.log('\n  Serveur de soirée prêt\n');
+    let v = 'inconnue';
+    try {
+      const m = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8').match(/var VERSION = '([^']+)'/);
+      if (m) v = m[1];
+    } catch (e) {}
+    console.log('\n  Serveur de soirée prêt — app version ' + v + '\n');
     console.log('  http://localhost:' + PORT + '   (cet ordinateur)');
     lines.forEach(l => console.log(l));
     console.log('\n  Données : ' + DATA);

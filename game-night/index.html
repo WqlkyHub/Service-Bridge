@@ -440,6 +440,7 @@ var P = {
 function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>'; }
 
 /* ================= données de départ ================= */
+var VERSION = '2026-09-12 · 15h40';   // repère de version de l'app
 var DEF_CATS = ['TFT','Sport','LOL','VALO','Autres jeux','Nutrition'];
 // Proposition de barème : [valeur du défi, prime versée quand l'objectif est
 // atteint]. La valeur se partage au prorata des unités faites ; la prime
@@ -1254,6 +1255,7 @@ function settingsSheet(){
       '<button class="btn" type="submit">Ajouter</button></form>' +
     '<div class="hr"></div>' +
     '<p class="muted">'+lanTxt+'</p>' +
+    '<p class="tiny" style="margin-top:6px">Version de l’app : '+VERSION+'</p>' +
     (MODE==='lan' ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
       '<button class="btn" id="sUpdate">'+ic('undo')+'Mettre à jour l’app</button></div>' +
       '<p class="tiny" style="margin-top:8px">Récupère la dernière version depuis GitHub, sans rien retélécharger.</p>' : '') +
@@ -1327,9 +1329,10 @@ function toast(msg, undo, label, cb){
   if(!toastCb) toastTimer = setTimeout(function(){ $('#toast').hidden=true; }, 4500);
 }
 function applyBareme(){
-  var ops=[], n=0;
+  var ops=[], n=0, idx={};
+  for(var key in BAREME) idx[norm(key)]=BAREME[key];
   S.challenges.forEach(function(c){
-    var b=BAREME[c.title];
+    var b=idx[norm(c.title)];
     if(!b || hasPts(c)) return;                 // on ne remplace jamais un barème déjà fixé
     var o={}; for(var k in c) o[k]=c[k];
     o.points=b[0]; o.bonus=b[1]; n++;
