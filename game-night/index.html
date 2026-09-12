@@ -143,6 +143,9 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 /* filtres */
 .filters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
+.baremeBar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:10px;
+  padding:10px 12px 10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);
+  font-size:13px;color:var(--text-2)}
 .search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
   border-radius:10px;padding:0 12px;margin-bottom:10px;color:var(--text-3)}
 .search input{flex:1;min-width:0;height:42px;border:0;background:none;padding:0;outline:none}
@@ -438,6 +441,22 @@ function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="
 
 /* ================= données de départ ================= */
 var DEF_CATS = ['TFT','Sport','LOL','VALO','Autres jeux','Nutrition'];
+// Proposition de barème : [valeur du défi, prime versée quand l'objectif est
+// atteint]. La valeur se partage au prorata des unités faites ; la prime
+// récompense le fait d'aller au bout, là où les dernières unités coûtent le
+// plus cher. Rien n'est imposé : le bouton ne remplit que les défis non chiffrés.
+var BAREME = {
+  'Top 1 TFT ×10':[150,60], '3★ 5 cost sur TFT':[90,0],
+  'Courir 21 km':[140,60], '100 tractions':[120,50], '200 pompes':[90,30], '200 squats':[70,20],
+  '1 game 0 mort en ranked':[60,0], 'Game à +30 kills/assists':[40,0], '1 penta sur LOL':[80,0],
+  'Gagner 3 Arena':[45,15],
+  '1 cut en ranked':[50,0], '1 ace Valorant':[70,0], '1 no scope':[45,0],
+  'Win 3v3 ranked sur RL':[35,0], 'Gagner 5 retakes d’affilée':[65,0],
+  'Finir Minecraft hardcore':[180,0], 'Top 1 Fall Guys':[40,0], 'Top 1 Fortnite':[60,0],
+  'Top 1 Meccha Chameleon':[40,0], 'Top 1 Apex':[60,0], 'Geoguessr à moins de 10 km':[45,0],
+  'Se faire insulter ou traiter de cheat':[25,0],
+  '2 kg de nuggets':[110,40], '20 bières':[100,30]
+};
 var UNITS = ['fois','top 1','parties','manches','rounds','kills','km','tractions','pompes','squats','bières','verres','shots','kg','g','L','min','h'];
 var STEPS = {km:0.5, kg:0.1, L:0.25, g:50, h:0.5, min:5};
 // [titre, détail, catégorie, objectif, unité] — aucun point n'est fixé ici,
@@ -511,7 +530,14 @@ function evPts(e){
   if(!e) return 0;
   if(!e.chId) return e.points||0;
   var ch=byId(S.challenges, e.chId);
-  return ch ? ptsFor(ch, e.qty||0) : (e.points||0);
+  if(!ch) return e.points||0;
+  var v = ptsFor(ch, e.qty||0);                 // au prorata des unités faites
+  var b = ch.bonus||0;
+  if(b>0){
+    var tot=totalOf(ch.id);                     // la prime d'objectif se partage
+    if(tot>0 && tot >= (ch.target||1)-1e-9) v += b*(e.qty||0)/tot;
+  }
+  return Math.round(v*100)/100;
 }
 function ptsFor(ch,q){
   var p = ch.points||0;
@@ -779,6 +805,9 @@ function renderDefis(prog){
   var cl = cats().filter(function(c){ return used[c.name]; });
 
   var html = '<div class="shead"><h2>Défis</h2><button class="btn pri qt" id="newCh">'+ic('plus')+'Nouveau</button></div>';
+  if(noPts)
+    html += '<div class="baremeBar"><span>'+noPts+' défi'+(noPts>1?'s':'')+' sans points</span>' +
+      '<button class="btn qt" id="baremeBtn">Barème suggéré</button></div>';
   if(S.challenges.length>=10)
     html += '<div class="search">'+ic('search')+'<input id="chSearch" type="search" autocomplete="off" ' +
       'placeholder="Rechercher un défi" aria-label="Rechercher un défi" value="'+esc(fQ)+'" /></div>';
@@ -821,6 +850,7 @@ function rowHtml(ch,prog,cm){
   var ppl=(cm&&cm[ch.id])||[];
   var objTxt = t>1 ? fmtQ(t)+' '+esc(ch.unit||'fois') : '';
   if(objTxt && norm(ch.title).indexOf(norm(fmtQ(t)))>=0) objTxt='';   // « 200 pompes » ne répète pas son objectif
+  if(ch.bonus>0 && hasPts(ch)) objTxt = (objTxt ? objTxt+' · ' : '') + 'prime '+ch.bonus;
   return '<article class="row'+(fin?' done':'')+'">' +
     '<div class="main">' +
       '<div class="tl"><h3>'+esc(ch.title)+'</h3>' + (objTxt?'<span class="obj">'+objTxt+'</span>':'') + '</div>' +
@@ -1160,7 +1190,8 @@ function progSheet(chId){
       }).join('') +
       '<div class="qtyPts" style="margin-top:14px">Total '+fmtQ(tot)+'\u202f'+esc(ch.unit||'fois')+' sur '+fmtQ(t) +
         (tot>=t-1e-9 ? ' · objectif atteint' : '') +
-        (hasPts(ch) ? ' · '+fmtPts(ptsFor(ch,tot))+' points en jeu' : '') + '</div>' +
+        (hasPts(ch) ? ' · '+fmtPts(ptsFor(ch,tot) + ((ch.bonus>0 && tot>=t-1e-9) ? ch.bonus : 0))+' points distribués' +
+          ((ch.bonus>0 && tot<t-1e-9) ? ' · prime '+ch.bonus+' à l\u2019objectif' : '') : '') + '</div>' +
     '</div>' +
     '<button class="btn full" data-add="'+chId+'" style="margin-top:16px">'+ic('plus')+'Ajouter une progression à plusieurs</button>');
 }
@@ -1185,6 +1216,9 @@ function chSheet(ch){
           '<button type="button" data-sc="total" aria-pressed="'+((e.scoring||'total')==='total')+'">Au total</button>' +
           '<button type="button" data-sc="unit" aria-pressed="'+(e.scoring==='unit')+'">Par unité</button></div></div>' +
       '</div>' +
+      '<div class="fld"><label for="chBonus">Prime d’objectif (facultatif)</label>' +
+        '<input class="inp mono" id="chBonus" type="number" min="0" max="9999" placeholder="0" value="'+(e.bonus?e.bonus:'')+'" />' +
+        '<span class="tiny">Versée quand l’objectif est atteint, partagée au prorata de ce que chacun a fait.</span></div>' +
       '<button class="btn pri full" type="submit">'+(ch?'Enregistrer':'Ajouter le défi')+'</button>' +
       '<input type="hidden" id="chId" value="'+esc(e.id||'')+'" />' +
     '</form>');
@@ -1280,6 +1314,18 @@ function toast(msg, undo, label, cb){
   $('#toast').hidden = false;
   clearTimeout(toastTimer);
   if(!toastCb) toastTimer = setTimeout(function(){ $('#toast').hidden=true; }, 4500);
+}
+function applyBareme(){
+  var ops=[], n=0;
+  S.challenges.forEach(function(c){
+    var b=BAREME[c.title];
+    if(!b || hasPts(c)) return;                 // on ne remplace jamais un barème déjà fixé
+    var o={}; for(var k in c) o[k]=c[k];
+    o.points=b[0]; o.bonus=b[1]; n++;
+    ops.push({op:'put', coll:'challenges', obj:o});
+  });
+  applyOps(ops);
+  toast(n ? n+' défis chiffrés — ajustez ce qui ne vous va pas' : 'Aucun défi à chiffrer');
 }
 function addPack(id){
   var pk=null; PACKS.forEach(function(p){ if(p.id===id) pk=p; });
@@ -1424,6 +1470,7 @@ document.addEventListener('click', function(evt){
       '<div class="pplRow">' + S.players.map(function(p){
         return '<button data-setme="'+p.id+'">'+ava(p,'sm')+esc(p.name)+'</button>'; }).join('') + '</div>');
   }
+  if(t.id==='baremeBtn') return applyBareme();
   if(t.id==='gearBtn'||t.id==='gear2') return settingsSheet();
   if(t.id==='lanShare'){
     return sheet('Réseau local','Rejoindre la soirée',
@@ -1525,6 +1572,8 @@ document.addEventListener('submit', function(e){
     obj.unit=$('#chUnit').value.trim()||'fois';
     var pv=$('#chPts').value.trim();
     obj.points = pv==='' ? null : Math.max(0, parseInt(pv,10)||0);
+    var bv=$('#chBonus').value.trim();
+    obj.bonus = bv==='' ? 0 : Math.max(0, parseInt(bv,10)||0);
     obj.scoring=$('#chScore').querySelector('[aria-pressed="true"]').dataset.sc;
     put('challenges', obj); closeSheet(); toast(id?'Défi mis à jour':'Défi ajouté');
     return;

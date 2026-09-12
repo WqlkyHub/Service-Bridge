@@ -94,6 +94,24 @@ Les points d'une action sont recalculés depuis le défi, donc fixer ou changer 
 barème met à jour tout l'historique : une progression enregistrée avant que vous
 ayez décidé de sa valeur est comptée dès que vous la renseignez.
 
+### Comment l'effort est récompensé
+
+Les points d'un défi se partagent **au prorata des unités faites** : sur un défi
+à 90 points et 200 pompes, celui qui en fait 150 touche 67,5 points, celui qui
+en fait 50 en touche 22,5. Personne ne gagne de points en appuyant sur un
+bouton : il faut avoir fait quelque chose.
+
+Un défi peut aussi porter une **prime d'objectif**, versée seulement quand
+l'objectif est atteint et partagée elle aussi au prorata. Elle existe parce que
+les dernières unités coûtent plus cher que les premières : la 200ᵉ pompe n'a
+rien à voir avec la première.
+
+Le bouton **Barème suggéré** (au-dessus de la liste, quand des défis n'ont pas
+de points) remplit une proposition calée sur la difficulté, et ne touche jamais
+à un défi déjà chiffré.
+
+### Les deux modes de calcul
+
 Un défi a un objectif (`20`), une unité (`km`) et des points. Deux modes :
 
 - **Au total** — les points sont répartis au prorata de l'objectif :
