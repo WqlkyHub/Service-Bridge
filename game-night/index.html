@@ -15,6 +15,7 @@
 </script>
 <!--ARTIFACT-START-->
 <title>La Manette d'Or</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='15' fill='%23121214'/%3E%3Ccircle cx='32' cy='27' r='8' fill='%23d9f23c'/%3E%3Cpath d='M21 42h22' stroke='%23d9f23c' stroke-width='5' stroke-linecap='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
@@ -22,7 +23,7 @@
 :root{
   --bg:#f6f6f7; --surface:#ffffff; --surface-2:#f1f1f3; --surface-3:#e9e9ec;
   --line:#e5e5ea; --line-2:#d4d4db;
-  --text:#121214; --text-2:#5a5a66; --text-3:#8d8d99;
+  --text:#121214; --text-2:#55555f; --text-3:#6e6e7a;
   --accent:#d9f23c; --accent-2:#c3dc26; --on-accent:#191d05;
   --inv-bg:#121214; --inv-text:#fafafa;
   --c0:#2a78d6; --c1:#eb6834; --c2:#1baf7a; --c3:#eda100;
@@ -37,7 +38,7 @@
   :root:not([data-theme="light"]){
     --bg:#0e0e11; --surface:#17171b; --surface-2:#1e1e23; --surface-3:#26262d;
     --line:#26262d; --line-2:#35353e;
-    --text:#f3f3f5; --text-2:#a2a2ae; --text-3:#787884;
+    --text:#f3f3f5; --text-2:#a8a8b4; --text-3:#8b8b97;
     --accent:#cfee2e; --accent-2:#b9d81c; --on-accent:#15180a;
     --inv-bg:#f3f3f5; --inv-text:#121214;
     --c0:#3987e5; --c1:#d95926; --c2:#199e70; --c3:#c98500;
@@ -49,7 +50,7 @@
 :root[data-theme="dark"]{
   --bg:#0e0e11; --surface:#17171b; --surface-2:#1e1e23; --surface-3:#26262d;
   --line:#26262d; --line-2:#35353e;
-  --text:#f3f3f5; --text-2:#a2a2ae; --text-3:#787884;
+  --text:#f3f3f5; --text-2:#a8a8b4; --text-3:#8b8b97;
   --accent:#cfee2e; --accent-2:#b9d81c; --on-accent:#15180a;
   --inv-bg:#f3f3f5; --inv-text:#121214;
   --c0:#3987e5; --c1:#d95926; --c2:#199e70; --c3:#c98500;
@@ -141,6 +142,10 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 /* filtres */
 .filters{display:flex;gap:6px;overflow-x:auto;padding:2px 0 14px;scrollbar-width:none}
 .filters::-webkit-scrollbar{display:none}
+.search{display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);
+  border-radius:10px;padding:0 12px;margin-bottom:10px;color:var(--text-3)}
+.search input{flex:1;min-width:0;height:42px;border:0;background:none;padding:0;outline:none}
+.search input::-webkit-search-cancel-button{-webkit-appearance:none;appearance:none}
 .fc{white-space:nowrap;height:32px;padding:0 12px;border-radius:8px;border:1px solid var(--line);background:var(--surface);
   font-size:12.5px;color:var(--text-2);display:inline-flex;align-items:center;gap:6px}
 .fc[aria-pressed="true"]{background:var(--inv-bg);color:var(--inv-text);border-color:var(--inv-bg)}
@@ -305,22 +310,22 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   </header>
 
   <nav class="tabs" role="tablist">
-    <button role="tab" aria-selected="true" data-view="defis">Défis</button>
-    <button role="tab" aria-selected="false" data-view="joueurs">Joueurs</button>
-    <button role="tab" aria-selected="false" data-view="classement">Classement</button>
-    <button role="tab" aria-selected="false" data-view="stats">Stats</button>
+    <button role="tab" id="tab-defis" aria-controls="view-defis" aria-selected="true" data-view="defis">Défis</button>
+    <button role="tab" id="tab-joueurs" aria-controls="view-joueurs" aria-selected="false" data-view="joueurs">Joueurs</button>
+    <button role="tab" id="tab-classement" aria-controls="view-classement" aria-selected="false" data-view="classement">Classement</button>
+    <button role="tab" id="tab-stats" aria-controls="view-stats" aria-selected="false" data-view="stats">Stats</button>
   </nav>
 
   <main>
-    <section class="view on" id="view-defis"></section>
-    <section class="view" id="view-joueurs"></section>
-    <section class="view" id="view-classement"></section>
-    <section class="view" id="view-stats"></section>
+    <section class="view on" id="view-defis" role="tabpanel" aria-labelledby="tab-defis"></section>
+    <section class="view" id="view-joueurs" role="tabpanel" aria-labelledby="tab-joueurs"></section>
+    <section class="view" id="view-classement" role="tabpanel" aria-labelledby="tab-classement"></section>
+    <section class="view" id="view-stats" role="tabpanel" aria-labelledby="tab-stats"></section>
   </main>
 </div>
 
-<div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
-<div id="toast" hidden><span id="toastMsg"></span><button id="toastAct" type="button">Annuler</button></div>
+<div class="scrim" id="scrim" hidden><div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle" tabindex="-1"></div></div>
+<div id="toast" hidden role="status" aria-live="polite"><span id="toastMsg"></span><button id="toastAct" type="button">Annuler</button></div>
 
 <script>
 (function(){
@@ -337,7 +342,8 @@ var P = {
   edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
   pm:'<path d="M5 12h14M12 5v14" opacity=".999"/>',
-  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>'
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/>',
+  search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.6-3.6"/>'
 };
 function ic(n){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+P[n]+'</svg>'; }
 
@@ -383,7 +389,7 @@ var PACKS = [
 var LS='manettedor.v2', LS_OLD='manettedor.v1', LS_ME='manettedor.me';
 var S = {meta:{name:"La Manette d'Or", date:new Date().toISOString().slice(0,10), cats:null}, players:[], challenges:[], events:[]};
 var MODE='local', DB=null, ME=null, LAN=null;
-var fState='tous', fCat='tous', toastTimer=null, undoId=null, pendingCat=null;
+var fState='tous', fCat='tous', fQ='', toastTimer=null, undoId=null;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -392,19 +398,21 @@ function $(s){ return document.querySelector(s); }
 function byId(a,id){ for(var i=0;i<a.length;i++) if(a[i].id===id) return a[i]; return null; }
 function cats(){ if(!S.meta.cats||!S.meta.cats.length) S.meta.cats = DEF_CATS.map(function(n,i){ return {name:n, slot:i}; }); return S.meta.cats; }
 function catOf(n){ var c=cats(); for(var i=0;i<c.length;i++) if(c[i].name===n) return c[i]; return {name:n||'Divers', slot:7}; }
-function catVar(n){ return 'var(--c'+(catOf(n).slot%8)+')'; }
-function ensureCat(n){
-  if(!n) return;
-  var c=cats(); for(var i=0;i<c.length;i++) if(c[i].name===n) return;
-  c.push({name:n, slot:c.length%8}); setMeta({cats:c});
+function ensureCat(n, defer){
+  if(!n) return false;
+  var c=cats(); for(var i=0;i<c.length;i++) if(c[i].name===n) return false;
+  c.push({name:n, slot:c.length%8});
+  if(!defer) setMeta({cats:c});
+  return true;
 }
 function initials(name){
   var p=String(name||'').trim().split(/\s+/);
   return ((p[0]||'?')[0]+(p[1]?p[1][0]:'')).toUpperCase();
 }
 function ava(p,cls){ return '<span class="ava '+(cls||'')+'" title="'+esc(p?p.name:'')+'">'+esc(initials(p?p.name:'?'))+'</span>'; }
+function norm(x){ return String(x==null?'':x).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
 function fmtQ(n){ return (Math.round(n*100)/100).toString().replace('.',','); }
-function stepFor(u,t){ if(STEPS[u]) return STEPS[u]; return t>0&&t<4 ? 1 : 1; }
+function stepFor(u){ return STEPS[u] || 1; }
 function ptsFor(ch,q){
   var p = ch.points||0;
   var v = ch.scoring==='unit' ? p*q : p*q/(ch.target||1);
@@ -435,18 +443,30 @@ function localUpsert(coll,obj){
   for(var i=0;i<a.length;i++) if(a[i].id===obj.id){ a[i]=obj; return; }
   a.push(obj);
 }
-function put(coll,obj){
-  localUpsert(coll,obj); sortAll(); render();
-  if(MODE==='cloud'){ var b={}; for(var k in obj) if(k!=='id') b[k]=obj[k];
-    DB.collection(coll).doc(obj.id).set(b).catch(fail); }
-  else if(MODE==='lan') lanOp({op:'put', coll:coll, obj:obj});
+function strip(obj){ var b={}; for(var k in obj) if(k!=='id') b[k]=obj[k]; return b; }
+// Toutes les écritures passent par ici : un lot = un seul rendu et un seul appel réseau.
+function applyOps(ops){
+  if(!ops.length) return;
+  ops.forEach(function(o){
+    if(o.op==='put') localUpsert(o.coll, o.obj);
+    else S[o.coll]=S[o.coll].filter(function(x){ return x.id!==o.id; });
+  });
+  sortAll(); render();
+  if(MODE==='cloud') ops.forEach(function(o){
+    if(o.op==='put') DB.collection(o.coll).doc(o.obj.id).set(strip(o.obj)).catch(fail);
+    else DB.collection(o.coll).doc(o.id).delete().catch(fail);
+  });
+  else if(MODE==='lan') lanOp(ops.length===1 ? ops[0] : {op:'batch', ops:ops});
   else persist();
 }
-function drop(coll,id){
-  S[coll]=S[coll].filter(function(x){ return x.id!==id; }); render();
-  if(MODE==='cloud') DB.collection(coll).doc(id).delete().catch(fail);
-  else if(MODE==='lan') lanOp({op:'drop', coll:coll, id:id});
-  else persist();
+function put(coll,obj){ applyOps([{op:'put', coll:coll, obj:obj}]); }
+function drop(coll,id){ applyOps([{op:'drop', coll:coll, id:id}]); }
+function clearOps(){
+  var ops=[];
+  ['events','challenges','players'].forEach(function(coll){
+    S[coll].forEach(function(x){ ops.push({op:'drop', coll:coll, id:x.id}); });
+  });
+  return ops;
 }
 function setMeta(patch){
   for(var k in patch) S.meta[k]=patch[k];
@@ -518,7 +538,13 @@ function applyRemote(st){
 }
 function lanOp(op){
   fetch('api/op', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(op)})
-    .catch(function(){ toast('Serveur injoignable — reconnexion en cours'); });
+    .then(function(r){ if(!r.ok) throw new Error('refus'); })
+    .catch(function(){ toast('Serveur injoignable — resynchronisation'); setTimeout(resync, 1500); });
+}
+function resync(){
+  fetch('api/state', {cache:'no-store'}).then(function(r){ return r.json(); })
+    .then(function(d){ applyRemote(d.state); status('lan'); })
+    .catch(function(){ status('lan-off'); });
 }
 function status(kind){
   var el=$('#statusLine'), n=(LAN&&LAN.peers)||0;
@@ -545,19 +571,26 @@ function scores(){
 function progress(){
   var m={}; S.events.forEach(function(e){ if(e.chId) m[e.chId]=(m[e.chId]||0)+(e.qty||0); }); return m;
 }
-function contribs(chId){
-  var seen={}, out=[];
-  S.events.forEach(function(e){
-    if(e.chId!==chId||seen[e.playerId]) return;
-    var p=byId(S.players,e.playerId); if(!p) return;
-    seen[e.playerId]=1; out.push(p);
-  });
-  return out;
+function contribMap(){
+  var m={};
+  for(var i=S.events.length-1;i>=0;i--){
+    var e=S.events[i]; if(!e.chId) continue;
+    var p=byId(S.players, e.playerId); if(!p) continue;
+    if(!m[e.chId]) m[e.chId]=[];
+    if(m[e.chId].indexOf(p)<0) m[e.chId].push(p);
+  }
+  return m;
 }
 function done(ch,prog){ return (prog[ch.id]||0) >= (ch.target||1) - 1e-9; }
 
 /* ================= rendu ================= */
+var dirty={defis:true, joueurs:true, classement:true, stats:true}, rafId=null, curView='defis';
 function render(){
+  for(var k in dirty) dirty[k]=true;
+  if(rafId) return;
+  rafId = requestAnimationFrame(function(){ rafId=null; renderNow(); });
+}
+function renderNow(){
   var prog=progress(), sc=scores();
   $('#partyName').textContent = S.meta.name || "La Manette d'Or";
   var d = S.meta.date ? new Date(S.meta.date+'T12:00:00') : new Date();
@@ -571,8 +604,13 @@ function render(){
   $('#meAva').textContent = me ? initials(me.name) : '?';
   $('#meAva').className = 'ava' + (me ? ' on' : '');
   $('#meName').textContent = me ? me.name : 'Je suis…';
-  $('#gearBtn').innerHTML = ic('gear');
-  renderDefis(prog); renderJoueurs(sc); renderClassement(sc); renderStats(sc);
+  if(!$('#gearBtn').firstChild) $('#gearBtn').innerHTML = ic('gear');
+  if(!dirty[curView]) return;
+  dirty[curView]=false;
+  if(curView==='defis') renderDefis(prog);
+  else if(curView==='joueurs') renderJoueurs(sc);
+  else if(curView==='classement') renderClassement(sc);
+  else renderStats(sc);
 }
 function kpi(v,l){ return '<div class="kpi"><b>'+v+'</b><span>'+l+'</span></div>'; }
 
@@ -585,15 +623,21 @@ function renderDefis(prog){
       '<div class="packs">' + PACKS.map(packHtml).join('') + '</div></div>';
     return;
   }
+  var cm = contribMap();
   var list = S.challenges.slice();
   if(fState==='encours') list=list.filter(function(c){ return !done(c,prog); });
   if(fState==='faits')   list=list.filter(function(c){ return done(c,prog); });
   if(fCat!=='tous')      list=list.filter(function(c){ return (c.cat||'Divers')===fCat; });
+  if(fQ){ var q=norm(fQ);
+    list=list.filter(function(c){ return norm(c.title).indexOf(q)>=0 || norm(c.note).indexOf(q)>=0 || norm(c.cat).indexOf(q)>=0; }); }
 
   var used={}; S.challenges.forEach(function(c){ used[c.cat||'Divers']=1; });
   var cl = cats().filter(function(c){ return used[c.name]; });
 
   var html = '<div class="shead"><h2>Défis</h2><button class="btn pri qt" id="newCh">'+ic('plus')+'Nouveau</button></div>';
+  if(S.challenges.length>=10)
+    html += '<div class="search">'+ic('search')+'<input id="chSearch" type="search" autocomplete="off" ' +
+      'placeholder="Rechercher un défi" aria-label="Rechercher un défi" value="'+esc(fQ)+'" /></div>';
   html += '<div class="filters">' +
     [['tous','Tous'],['encours','En cours'],['faits','Validés']].map(function(f){
       return '<button class="fc" data-fs="'+f[0]+'" aria-pressed="'+(fState===f[0])+'">'+f[1]+'</button>'; }).join('') +
@@ -604,7 +648,7 @@ function renderDefis(prog){
     '</div>';
 
   if(!list.length){ html += '<div class="empty"><p style="margin:0">Aucun défi dans ce filtre.</p></div>'; }
-  else if(fCat!=='tous' || fState!=='tous'){ html += '<div class="list">' + list.map(function(c){ return rowHtml(c,prog); }).join('') + '</div>'; }
+  else if(fCat!=='tous' || fState!=='tous'){ html += '<div class="list">' + list.map(function(c){ return rowHtml(c,prog,cm); }).join('') + '</div>'; }
   else {
     var groups = cl.map(function(c){ return {cat:c, items:list.filter(function(x){ return (x.cat||'Divers')===c.name; })}; })
       .filter(function(g){ return g.items.length; });
@@ -615,7 +659,7 @@ function renderDefis(prog){
       var items = g.items.slice().sort(function(a,b){ return (done(a,prog)?1:0)-(done(b,prog)?1:0); });
       return '<div class="group"><div class="gh"><i class="dot" style="--c:var(--c'+(g.cat.slot%8)+')"></i>' +
         esc(g.cat.name) + '<span class="gcount">'+d2+'/'+g.items.length+'</span></div>' +
-        '<div class="list">' + items.map(function(c){ return rowHtml(c,prog); }).join('') + '</div></div>';
+        '<div class="list">' + items.map(function(c){ return rowHtml(c,prog,cm); }).join('') + '</div></div>';
     }).join('');
   }
   html += '<div class="shead"><h2>Packs</h2><span class="sub">tout ajouter d’un coup</span></div>' +
@@ -626,9 +670,9 @@ function packHtml(p){
   return '<button class="pack" data-pack="'+p.id+'"><span class="t"><b>'+esc(p.name)+'</b>' +
     '<span>'+p.items.length+' défis · '+esc(p.desc)+'</span></span>'+ic('plus')+'</button>';
 }
-function rowHtml(ch,prog){
+function rowHtml(ch,prog,cm){
   var q=prog[ch.id]||0, t=ch.target||1, fin=q>=t-1e-9, pct=Math.min(100,Math.round(q/t*100));
-  var ppl=contribs(ch.id);
+  var ppl=(cm&&cm[ch.id])||[];
   var objTxt = t>1 ? fmtQ(t)+' '+esc(ch.unit||'fois') : '';
   return '<article class="row'+(fin?' done':'')+'">' +
     '<div class="main">' +
@@ -744,19 +788,29 @@ function renderStats(sc){
 }
 
 /* ================= feuilles ================= */
+var lastFocus=null;
 function sheet(kicker,title,body){
-  $('#sheet').innerHTML = '<div class="sh"><div><div class="kicker">'+kicker+'</div><h2>'+title+'</h2></div>' +
+  if($('#scrim').hidden) lastFocus = document.activeElement;
+  $('#sheet').innerHTML = '<div class="sh"><div><div class="kicker">'+kicker+'</div><h2 id="sheetTitle">'+title+'</h2></div>' +
     '<button class="ib" data-close="1" aria-label="Fermer">'+ic('close')+'</button></div>' + body;
   $('#scrim').hidden=false;
+  $('#sheet').scrollTop=0;
+  $('#sheet').focus();
 }
-function closeSheet(){ $('#scrim').hidden=true; pendingCat=null; }
+function closeSheet(){
+  if($('#scrim').hidden) return;
+  $('#scrim').hidden=true;
+  if(lastFocus && document.contains(lastFocus)){ try{ lastFocus.focus(); }catch(e){} }
+  lastFocus=null;
+}
 
 function addSheet(chId){
   var ch=byId(S.challenges,chId); if(!ch) return;
   if(!S.players.length){ toast('Ajoutez d’abord des joueurs'); return go('joueurs'); }
   var prog=progress(), q0=prog[chId]||0, t=ch.target||1;
-  var step=stepFor(ch.unit,t), rest=Math.max(step, Math.round((t-q0)/step)*step);
+  var step=stepFor(ch.unit), rest=Math.max(step, Math.round((t-q0)/step)*step);
   var maxV=Math.max(step, t>1 ? rest : 1);
+  var slider = t>1 && maxV>step;
   var snap=function(x){ return Math.round(Math.round(x/step)*step*100)/100; };
   var val=t>1 ? Math.min(maxV, Math.max(step, snap(t/10))) : 1;
   var quick=[]; [step, snap(t/20), snap(t/10), snap(t/4)].forEach(function(v){
@@ -768,7 +822,7 @@ function addSheet(chId){
       '<div class="fld"><label>Qui marque</label><div class="pplRow" id="whoRow">' +
         S.players.map(function(p){ return '<button type="button" data-w="'+p.id+'" aria-pressed="'+(p.id===who)+'">'+ava(p,'sm')+esc(p.name)+'</button>'; }).join('') +
       '</div></div>' +
-      (t>1 ?
+      (slider ?
         '<div class="fld"><label>Quantité ajoutée</label>' +
           '<div class="qty"><b id="qV">'+fmtQ(val)+'</b><span>'+esc(ch.unit||'')+'</span></div>' +
           '<input type="range" id="qR" min="'+step+'" max="'+maxV+'" step="'+step+'" value="'+val+'" aria-label="Quantité" />' +
@@ -779,8 +833,8 @@ function addSheet(chId){
           '</div>' +
           '<div class="qtyPts" id="qP"></div>' +
         '</div>'
-        : '<div class="qtyPts">Vaut '+(ch.points||0)+' points</div>') +
-      '<button class="btn pri full" id="doAdd" data-ch="'+chId+'">Valider</button>' +
+        : '<div class="qtyPts">Vaut '+fmtPts(ptsFor(ch, t>1?maxV:1))+' points</div>') +
+      '<button class="btn pri full" id="doAdd" data-ch="'+chId+'" data-qty="'+(t>1?maxV:1)+'">Valider</button>' +
     '</div>');
   var r=$('#qR');
   if(r){
@@ -893,18 +947,22 @@ function addPack(id){
   var pk=null; PACKS.forEach(function(p){ if(p.id===id) pk=p; });
   if(!pk) return;
   var have={}; S.challenges.forEach(function(c){ have[c.title]=1; });
-  var n=0, now=Date.now();
+  var now=Date.now(), added=false, ops=[];
   pk.items.forEach(function(it,i){
     if(have[it[0]]) return;
-    ensureCat(it[2]); n++;
-    put('challenges', {id:uid(), title:it[0], note:it[1], cat:it[2], points:it[3], scoring:'total',
-      target:it[4], unit:it[5], createdAt:now+i});
+    added = ensureCat(it[2], true) || added;
+    ops.push({op:'put', coll:'challenges', obj:{id:uid(), title:it[0], note:it[1], cat:it[2],
+      points:it[3], scoring:'total', target:it[4], unit:it[5], createdAt:now+i}});
   });
-  toast(n ? n+' défis ajoutés' : 'Déjà dans la liste');
+  if(added) setMeta({cats:cats()});
+  applyOps(ops);
+  toast(ops.length ? ops.length+' défis ajoutés' : 'Déjà dans la liste');
 }
 function go(v){
+  curView=v;
   document.querySelectorAll('nav.tabs button').forEach(function(b){ b.setAttribute('aria-selected', String(b.dataset.view===v)); });
   document.querySelectorAll('.view').forEach(function(s){ s.classList.toggle('on', s.id==='view-'+v); });
+  renderNow();
   scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -930,7 +988,7 @@ document.addEventListener('click', function(evt){
   if(t.id==='doAdd'){
     var ch=byId(S.challenges,d.ch); if(!ch) return;
     var w=$('#whoRow').querySelector('[aria-pressed="true"]');
-    var r2=$('#qR'), q = r2 ? parseFloat(r2.value) : 1;
+    var r2=$('#qR'), q = r2 ? parseFloat(r2.value) : (parseFloat(t.dataset.qty)||1);
     closeSheet();
     return award(ch.id, w.dataset.w, q);
   }
@@ -945,8 +1003,10 @@ document.addEventListener('click', function(evt){
   if(d.editch){ var c3=byId(S.challenges,d.editch); closeSheet(); return chSheet(c3); }
   if(d.delch){
     if(d.armed){
-      S.events.filter(function(e){ return e.chId===d.delch; }).forEach(function(e){ drop('events',e.id); });
-      drop('challenges', d.delch); closeSheet(); return toast('Défi supprimé');
+      var ops=S.events.filter(function(e){ return e.chId===d.delch; })
+        .map(function(e){ return {op:'drop', coll:'events', id:e.id}; });
+      ops.push({op:'drop', coll:'challenges', id:d.delch});
+      applyOps(ops); closeSheet(); return toast('Défi supprimé');
     }
     t.dataset.armed='1'; t.innerHTML=ic('trash')+'Confirmer la suppression'; return;
   }
@@ -979,15 +1039,19 @@ document.addEventListener('click', function(evt){
   }
   if(d.delp){
     if(d.armed){
-      S.events.filter(function(e){ return e.playerId===d.delp; }).forEach(function(e){ drop('events',e.id); });
+      var opsP=S.events.filter(function(e){ return e.playerId===d.delp; })
+        .map(function(e){ return {op:'drop', coll:'events', id:e.id}; });
+      opsP.push({op:'drop', coll:'players', id:d.delp});
       if(ME===d.delp){ ME=null; try{ localStorage.removeItem(LS_ME); }catch(e){} }
-      drop('players', d.delp); closeSheet(); return toast('Joueur retiré');
+      applyOps(opsP); closeSheet(); return toast('Joueur retiré');
     }
     t.dataset.armed='1'; t.innerHTML=ic('trash')+'Confirmer'; return;
   }
   if(d.delcat){
-    var left=cats().filter(function(c){ return c.name!==d.delcat; });
-    setMeta({cats:left}); settingsSheet(); return;
+    var inUse=S.challenges.filter(function(c){ return (c.cat||'')===d.delcat; }).length;
+    if(inUse) return toast(inUse+' défi'+(inUse>1?'s utilisent':' utilise')+' encore « '+d.delcat+' »');
+    setMeta({cats: cats().filter(function(c){ return c.name!==d.delcat; })});
+    settingsSheet(); return;
   }
   if(d.delev){ drop('events', d.delev); return toast('Action annulée'); }
 
@@ -1026,28 +1090,33 @@ document.addEventListener('click', function(evt){
     try{
       var d4=JSON.parse($('#impTxt').value);
       if(!d4||!d4.players) throw 0;
-      S.players.slice().forEach(function(p){ drop('players',p.id); });
-      S.challenges.slice().forEach(function(c){ drop('challenges',c.id); });
-      S.events.slice().forEach(function(e){ drop('events',e.id); });
-      (d4.players||[]).forEach(function(p){ put('players',p); });
-      (d4.challenges||[]).forEach(function(c){ put('challenges',c); });
-      (d4.events||[]).forEach(function(e){ put('events',e); });
+      var opsI=clearOps();
+      ['players','challenges','events'].forEach(function(coll){
+        (d4[coll]||[]).forEach(function(x){ if(x&&x.id) opsI.push({op:'put', coll:coll, obj:x}); });
+      });
       if(d4.meta) setMeta(d4.meta);
+      applyOps(opsI);
       closeSheet(); toast('Sauvegarde importée');
     }catch(e){ toast('Ce texte n’est pas une sauvegarde valide'); }
     return;
   }
   if(t.id==='sReset'){
     if(d.armed){
-      S.events.slice().forEach(function(e){ drop('events',e.id); });
-      S.challenges.slice().forEach(function(c){ drop('challenges',c.id); });
-      S.players.slice().forEach(function(p){ drop('players',p.id); });
+      applyOps(clearOps());
       ME=null; try{ localStorage.removeItem(LS_ME); }catch(e){}
       closeSheet(); return toast('Tout a été effacé');
     }
     t.dataset.armed='1'; t.textContent='Confirmer l’effacement'; return;
   }
   if(t.id==='toastAct'){ if(undoId){ drop('events',undoId); undoId=null; } $('#toast').hidden=true; return; }
+});
+
+document.addEventListener('input', function(e){
+  if(e.target.id!=='chSearch') return;
+  fQ = e.target.value;
+  dirty.defis=true; curView='defis'; renderNow();
+  var i=$('#chSearch');
+  if(i){ i.focus(); try{ i.setSelectionRange(i.value.length, i.value.length); }catch(err){} }
 });
 
 document.addEventListener('change', function(e){

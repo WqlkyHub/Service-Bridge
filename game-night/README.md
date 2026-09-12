@@ -26,9 +26,15 @@ instantanément sur les autres appareils (Server-Sent Events). Aucune connexion
 Internet n'est nécessaire.
 
 L'état de la soirée est écrit dans `soiree.json` à côté du serveur — copiez ce
-fichier pour archiver une soirée, supprimez-le pour repartir à zéro.
+fichier pour archiver une soirée, supprimez-le pour repartir à zéro. Le journal
+est plafonné aux 2000 dernières actions.
 
 Node 18 ou plus récent, aucune dépendance à installer.
+
+> **Pas d'authentification, c'est voulu.** Toute personne qui atteint l'adresse
+> du serveur peut valider un défi ou modifier la soirée. À garder pour un
+> réseau de confiance (le Wi-Fi de l'appartement) — ne l'exposez pas sur
+> Internet tel quel.
 
 ## 3. Publié en Artifact sur claude.ai
 
@@ -50,10 +56,18 @@ Un défi a un objectif (`20`), une unité (`km`) et des points. Deux modes :
 
 Les bonus et malus manuels (menu d'un joueur) s'ajoutent hors défi.
 
+## Détails utiles
+
+- Au-delà de dix défis, un champ de recherche apparaît ; il ignore les accents.
+- Les écritures partent en lot : charger un pack de vingt défis, ou supprimer un
+  joueur et toutes ses actions, ne fait qu'un appel réseau et un seul rendu.
+- Seul l'onglet visible est reconstruit, et au plus une fois par image.
+- Tout ce qui est saisi est échappé avant affichage, sur les trois modes.
+
 ## Structure
 
 | Fichier | Rôle |
 |---|---|
 | `index.html` | toute l'app (interface, données, synchro) |
 | `server.js` | serveur de soirée en réseau local |
-| `manifest.json`, `service-worker.js` | installation et fonctionnement hors ligne |
+| `manifest.json`, `service-worker.js`, `icon.svg` | installation et fonctionnement hors ligne |

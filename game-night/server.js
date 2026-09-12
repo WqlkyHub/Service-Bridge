@@ -20,10 +20,12 @@ const STATIC = {
   '/': ['index.html', 'text/html; charset=utf-8'],
   '/index.html': ['index.html', 'text/html; charset=utf-8'],
   '/manifest.json': ['manifest.json', 'application/json; charset=utf-8'],
-  '/service-worker.js': ['service-worker.js', 'text/javascript; charset=utf-8']
+  '/service-worker.js': ['service-worker.js', 'text/javascript; charset=utf-8'],
+  '/icon.svg': ['icon.svg', 'image/svg+xml']
 };
 const COLLECTIONS = ['players', 'challenges', 'events'];
 const MAX_BODY = 2 * 1024 * 1024;
+const MAX_EVENTS = 2000;   // le journal d'une soirée reste borné
 
 let state = load();
 let rev = 0;
@@ -58,7 +60,7 @@ function send(event, data) {
 function pushState() { rev++; send('state', { rev, state }); save(); }
 function pushPeers() { send('peers', { peers: clients.size }); }
 
-function apply(op) {
+function applyOne(op) {
   if (!op || typeof op !== 'object') return false;
   if (op.op === 'put' && COLLECTIONS.includes(op.coll) && op.obj && typeof op.obj.id === 'string') {
     const list = state[op.coll];
@@ -73,6 +75,20 @@ function apply(op) {
   } else {
     return false;
   }
+  return true;
+}
+
+// Un lot entier ne provoque qu'une seule diffusion : charger un pack de 20 défis
+// ne réveille pas vingt fois tous les téléphones.
+function apply(op) {
+  let changed = false;
+  if (op && op.op === 'batch' && Array.isArray(op.ops)) {
+    for (const sub of op.ops.slice(0, 1000)) changed = applyOne(sub) || changed;
+  } else {
+    changed = applyOne(op);
+  }
+  if (!changed) return false;
+  if (state.events.length > MAX_EVENTS) state.events = state.events.slice(-MAX_EVENTS);
   pushState();
   return true;
 }
@@ -127,7 +143,7 @@ const server = http.createServer(async (req, res) => {
   if (hit && (req.method === 'GET' || req.method === 'HEAD')) {
     return fs.readFile(path.join(ROOT, hit[0]), (err, buf) => {
       if (err) { res.writeHead(404); return res.end('Fichier introuvable'); }
-      res.writeHead(200, { 'Content-Type': hit[1], 'Cache-Control': 'no-cache' });
+      res.writeHead(200, { 'Content-Type': hit[1], 'Cache-Control': 'no-cache', 'X-Content-Type-Options': 'nosniff' });
       res.end(req.method === 'HEAD' ? undefined : buf);
     });
   }
@@ -146,6 +162,21 @@ function addresses() {
   }
   return out;
 }
+
+function flush() {
+  clearTimeout(saveTimer);
+  try { fs.writeFileSync(DATA, JSON.stringify(state)); } catch (e) {}
+}
+process.on('SIGINT', () => { flush(); process.exit(0); });
+process.on('SIGTERM', () => { flush(); process.exit(0); });
+
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') {
+    console.error('\n  Le port ' + PORT + ' est déjà utilisé. Essayez : PORT=8081 node server.js\n');
+    process.exit(1);
+  }
+  throw err;
+});
 
 server.listen(PORT, () => {
   const lines = addresses().map(ip => '  http://' + ip + ':' + PORT + '   (les autres appareils)');

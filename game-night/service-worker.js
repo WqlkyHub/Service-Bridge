@@ -1,5 +1,5 @@
-const CACHE_NAME = 'manette-dor-v1';
-const FILES_TO_CACHE = ['./index.html', './manifest.json'];
+const CACHE_NAME = 'manette-dor-v2';
+const FILES_TO_CACHE = ['./index.html', './manifest.json', './icon.svg'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
@@ -14,16 +14,24 @@ self.addEventListener('activate', event => {
   );
 });
 
-// Réseau d'abord, cache en secours : l'app reste utilisable hors connexion.
+// Réseau d'abord, cache en secours. L'API et le flux temps réel ne passent jamais par le cache :
+// mettre un flux SSE en cache le ferait grossir sans fin et servirait un état périmé.
 self.addEventListener('fetch', event => {
-  if (event.request.method !== 'GET') return;
+  const req = event.request;
+  if (req.method !== 'GET') return;
+  const url = new URL(req.url);
+  if (url.origin !== self.location.origin) return;
+  if (url.pathname.endsWith('/api/state') || url.pathname.endsWith('/api/events') || url.pathname.endsWith('/api/op')) return;
+
   event.respondWith(
-    fetch(event.request)
+    fetch(req)
       .then(response => {
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone)).catch(() => {});
+        if (response && response.ok && response.type === 'basic') {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(req, clone)).catch(() => {});
+        }
         return response;
       })
-      .catch(() => caches.match(event.request))
+      .catch(() => caches.match(req).then(hit => hit || caches.match('./index.html')))
   );
 });
