@@ -1117,6 +1117,9 @@ function settingsSheet(){
       '<button class="btn" type="submit">Ajouter</button></form>' +
     '<div class="hr"></div>' +
     '<p class="muted">'+lanTxt+'</p>' +
+    (MODE==='lan' ? '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+      '<button class="btn" id="sUpdate">'+ic('undo')+'Mettre à jour l’app</button></div>' +
+      '<p class="tiny" style="margin-top:8px">Récupère la dernière version depuis GitHub, sans rien retélécharger.</p>' : '') +
     '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
       '<button class="btn" id="sExport">Exporter</button>' +
       '<button class="btn" id="sImport">Importer</button>' +
@@ -1340,6 +1343,16 @@ document.addEventListener('click', function(evt){
     return;
   }
   if(t.id==='sSave'){ setMeta({name:$('#sName').value.trim()||S.meta.name, date:$('#sDate').value||S.meta.date}); closeSheet(); return; }
+  if(t.id==='sUpdate'){
+    t.disabled=true; t.textContent='Recherche…';
+    fetch('api/update', {method:'POST'}).then(function(r){ return r.json(); }).then(function(d){
+      if(d.offline){ toast('Pas de connexion à GitHub'); t.disabled=false; t.textContent='Réessayer'; return; }
+      if(!d.updated.length){ toast('Déjà à jour'); t.disabled=false; t.textContent='Déjà à jour'; return; }
+      if(d.restart) toast('Serveur mis à jour — fermez et relancez la fenêtre du serveur');
+      else { toast('Mise à jour installée — rechargement'); setTimeout(function(){ location.reload(); }, 900); }
+    }).catch(function(){ toast('Mise à jour impossible'); t.disabled=false; t.textContent='Réessayer'; });
+    return;
+  }
   if(t.id==='sExport'){
     return sheet('Sauvegarde','Exporter',
       '<p class="muted" style="margin-bottom:10px">Copiez ce texte pour garder une trace de la soirée.</p>' +

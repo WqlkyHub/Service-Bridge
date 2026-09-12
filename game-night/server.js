@@ -24,6 +24,22 @@ const STATIC = {
   '/icon.svg': ['icon.svg', 'image/svg+xml']
 };
 const COLLECTIONS = ['players', 'challenges', 'events'];
+
+// Mise à jour automatique : au démarrage (et sur demande depuis l'app), le
+// serveur récupère la dernière version des fichiers depuis GitHub. Rien à
+// retélécharger à la main. NO_UPDATE=1 pour la désactiver.
+const REMOTE = 'https://raw.githubusercontent.com/WqlkyHub/Service-Bridge/'
+  + 'refs/heads/claude/video-game-challenge-tracker-hlx0yq/game-night/';
+const UPDATABLE = [
+  { name: 'index.html', min: 20000, must: "La Manette d'Or" },
+  { name: 'manifest.json', min: 200, must: 'short_name' },
+  { name: 'service-worker.js', min: 300, must: 'CACHE_NAME' },
+  { name: 'icon.svg', min: 100, must: '<svg' },
+  { name: 'soiree-depart.json', min: 200, must: 'challenges' },
+  { name: 'server.js', min: 3000, must: 'createServer' },
+  { name: 'demarrer-windows.bat', min: 100, must: 'node server.js' },
+  { name: 'demarrer-mac-linux.command', min: 100, must: 'node server.js' }
+];
 const MAX_BODY = 2 * 1024 * 1024;
 const MAX_EVENTS = 2000;   // le journal d'une soirée reste borné
 
@@ -93,6 +109,43 @@ function apply(op) {
   return true;
 }
 
+async function fetchText(url) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 8000);
+  try {
+    const res = await fetch(url, { signal: ctrl.signal, headers: { 'Cache-Control': 'no-cache' } });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    return await res.text();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function selfUpdate() {
+  const out = { updated: [], failed: 0, offline: false, restart: false };
+  if (process.env.NO_UPDATE || typeof fetch !== 'function') return out;
+  await Promise.all(UPDATABLE.map(async file => {
+    try {
+      const text = await fetchText(REMOTE + file.name);
+      // Un fichier trop court ou sans son marqueur = page d'erreur ou coupure :
+      // on garde la version locale plutôt que d'écrire n'importe quoi.
+      if (text.length < file.min || text.indexOf(file.must) < 0) throw new Error('contenu inattendu');
+      const dest = path.join(ROOT, file.name);
+      let current = '';
+      try { current = fs.readFileSync(dest, 'utf8'); } catch (e) {}
+      if (current === text) return;
+      fs.writeFileSync(dest, text);
+      if (file.name === 'demarrer-mac-linux.command') { try { fs.chmodSync(dest, 0o755); } catch (e) {} }
+      out.updated.push(file.name);
+      if (file.name === 'server.js') out.restart = true;
+    } catch (e) {
+      out.failed++;
+    }
+  }));
+  out.offline = out.failed === UPDATABLE.length;
+  return out;
+}
+
 function readBody(req) {
   return new Promise((resolve, reject) => {
     let raw = '';
@@ -126,6 +179,12 @@ const server = http.createServer(async (req, res) => {
     const ping = setInterval(() => { try { res.write(': ping\n\n'); } catch (e) {} }, 25000);
     req.on('close', () => { clearInterval(ping); clients.delete(res); pushPeers(); });
     return;
+  }
+
+  if (url === '/api/update' && req.method === 'POST') {
+    const result = await selfUpdate();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(result));
   }
 
   if (url === '/api/op' && req.method === 'POST') {
@@ -178,11 +237,22 @@ server.on('error', err => {
   throw err;
 });
 
-server.listen(PORT, () => {
-  const lines = addresses().map(ip => '  http://' + ip + ':' + PORT + '   (les autres appareils)');
-  console.log('\n  La Manette d\'Or — serveur de soirée\n');
-  console.log('  http://localhost:' + PORT + '   (cet ordinateur)');
-  lines.forEach(l => console.log(l));
-  console.log('\n  Données : ' + DATA);
-  console.log('  Ctrl+C pour arrêter.\n');
-});
+async function start() {
+  console.log('\n  La Manette d\'Or — recherche d\'une mise à jour…');
+  const up = await selfUpdate();
+  if (up.offline) console.log('  Pas de connexion à GitHub : version locale conservée.');
+  else if (up.updated.length) console.log('  Mis à jour : ' + up.updated.join(', '));
+  else console.log('  Déjà à jour.');
+  if (up.restart) console.log('  ⚠ Le serveur lui-même a été mis à jour : fermez et relancez pour en profiter.');
+
+  server.listen(PORT, () => {
+    const lines = addresses().map(ip => '  http://' + ip + ':' + PORT + '   (les autres appareils)');
+    console.log('\n  Serveur de soirée prêt\n');
+    console.log('  http://localhost:' + PORT + '   (cet ordinateur)');
+    lines.forEach(l => console.log(l));
+    console.log('\n  Données : ' + DATA);
+    console.log('  Ctrl+C pour arrêter.\n');
+  });
+}
+
+start();
