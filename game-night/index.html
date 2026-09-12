@@ -187,6 +187,15 @@ nav.tabs button[aria-selected="true"]::after{content:"";position:absolute;top:2p
 .dRow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
 .dRow .v{font-family:var(--mono);font-size:16px;min-width:52px;text-align:right}
 .dRow .u{font-size:12px;color:var(--text-3);min-width:40px}
+.eRow{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding:11px 0;border-top:1px solid var(--line)}
+.eRow:first-of-type{border-top:0}
+.whoBtn{display:flex;align-items:center;gap:8px;flex:1 1 150px;min-width:0;text-align:left;padding:4px 0}
+.whoBtn .nm{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.whoBtn .tiny{flex:0 0 auto}
+.eCtl{display:flex;align-items:center;gap:8px;margin-left:auto}
+.eCtl .v{font-family:var(--mono);font-size:16px;min-width:46px;text-align:right}
+.eCtl .u{font-size:12px;color:var(--text-3)}
+.btn.gh.dg{border-color:transparent}
 .stepBtn{width:36px;height:36px;border-radius:9px;border:1px solid var(--line-2);background:var(--surface);
   display:grid;place-items:center;font-size:17px;line-height:1;color:var(--text)}
 .stepBtn:active{background:var(--surface-2)}
@@ -978,7 +987,7 @@ function addSheet(chId){
   sheet(esc(ch.cat||'Défi'), esc(ch.title),
     '<div class="stack-form">' +
       (already.length ? '<p class="shared">'+ic('users')+'<span>Déjà marqué par '+already.join(' · ')+
-        ' — chacun peut ajouter sa part.</span></p>' : '') +
+        ' — chacun peut ajouter sa part. <button type="button" class="lnk" data-prog="'+chId+'">Corriger</button></span></p>' : '') +
       '<div class="fld"><div class="lblRow"><label>Qui marque</label>' +
         (S.players.length>1 ? '<button type="button" class="lnk" id="whoAll">Tout le monde</button>' : '') + '</div>' +
         '<div class="pplRow" id="whoRow">' + S.players.map(function(p){
@@ -1071,6 +1080,34 @@ function asUpd(){
   }
   $('#asSum').textContent=sum;
   $('#doAdd').disabled = !parts.length || total<=0;
+}
+// Corriger après coup : chaque apport peut être ajusté, réattribué ou supprimé.
+// Toute modification part aussitôt sur les autres appareils.
+function progSheet(chId){
+  var ch=byId(S.challenges,chId); if(!ch) return;
+  var t=ch.target||1, step=stepFor(ch.unit);
+  var evs=S.events.filter(function(e){ return e.chId===chId; });
+  var q=progress()[chId]||0;
+  sheet(esc(ch.cat||'Défi'), esc(ch.title),
+    (evs.length ?
+      '<div class="fld"><label>Progressions enregistrées</label>' +
+      evs.map(function(e){
+        var pl=byId(S.players,e.playerId), tm=new Date(e.at||Date.now());
+        return '<div class="eRow">' +
+          '<button type="button" class="whoBtn" data-ereassign="'+e.id+'" title="Changer de joueur">' +
+            ava(pl,'sm')+'<span class="nm">'+esc(pl?pl.name:'—')+'</span>' +
+            '<span class="tiny">'+('0'+tm.getHours()).slice(-2)+':'+('0'+tm.getMinutes()).slice(-2)+'</span></button>' +
+          '<div class="eCtl">' +
+            (t>1 ? '<button type="button" class="stepBtn" data-eq="'+e.id+'|-1" aria-label="Retirer">\u2212</button>' : '') +
+            '<b class="v">'+fmtQ(e.qty||0)+'</b><span class="u">'+esc(ch.unit||'')+'</span>' +
+            (t>1 ? '<button type="button" class="stepBtn" data-eq="'+e.id+'|1" aria-label="Ajouter">+</button>' : '') +
+            '<button type="button" class="btn gh qt dg" data-edel="'+e.id+'" aria-label="Supprimer">'+ic('trash')+'</button>' +
+          '</div></div>';
+      }).join('') +
+      '<div class="qtyPts" style="margin-top:12px">Total : '+fmtQ(q)+'\u202f'+esc(ch.unit||'')+' sur '+fmtQ(t)+
+        (q>=t-1e-9 ? ' · objectif atteint' : '')+'</div></div>'
+      : '<p class="muted">Aucune progression enregistrée pour ce défi.</p>') +
+    '<button class="btn full" data-add="'+chId+'" style="margin-top:14px">'+ic('plus')+'Ajouter une progression</button>');
 }
 function chSheet(ch){
   var c=cats(), e=ch||{};
@@ -1263,12 +1300,52 @@ document.addEventListener('click', function(evt){
 
   if(d.menu){
     var c2=byId(S.challenges,d.menu); if(!c2) return;
+    var nEv=S.events.filter(function(e){ return e.chId===c2.id; }).length;
     return sheet(esc(c2.cat||''), esc(c2.title),
       '<div style="display:flex;flex-direction:column;gap:8px">' +
+      (nEv ? '<button class="btn full" data-prog="'+c2.id+'">'+ic('undo')+'Corriger les progressions ('+nEv+')</button>' : '') +
       '<button class="btn full" data-editch="'+c2.id+'">'+ic('edit')+'Modifier le défi</button>' +
       '<button class="btn full dg" data-delch="'+c2.id+'">'+ic('trash')+'Supprimer le défi</button></div>');
   }
   if(d.editch){ var c3=byId(S.challenges,d.editch); closeSheet(); return chSheet(c3); }
+  if(d.prog) return progSheet(d.prog);
+  if(d.eq){
+    var qb=d.eq.split('|'), ev=byId(S.events,qb[0]); if(!ev) return;
+    var ch4=byId(S.challenges,ev.chId); if(!ch4) return;
+    var st=stepFor(ch4.unit);
+    var nq=Math.round(((ev.qty||0)+parseFloat(qb[1])*st)*100)/100;
+    if(nq<st) return toast('Utilisez la corbeille pour retirer cette progression');
+    var copy={}; for(var k in ev) copy[k]=ev[k];
+    copy.qty=nq; copy.points=ptsFor(ch4,nq);
+    put('events', copy);
+    progSheet(ch4.id); return;
+  }
+  if(d.edel){
+    var ev2=byId(S.events,d.edel); if(!ev2) return;
+    var cid=ev2.chId;
+    drop('events', d.edel);
+    toast('Progression supprimée');
+    if(cid) progSheet(cid); else closeSheet();
+    return;
+  }
+  if(d.ereassign){
+    var ev3=byId(S.events,d.ereassign); if(!ev3) return;
+    var ch5=byId(S.challenges,ev3.chId);
+    return sheet(esc(ch5?ch5.title:''), 'Attribuer à',
+      '<div class="pplRow">' + S.players.map(function(pl){
+        return '<button type="button" data-ereas="'+ev3.id+'|'+pl.id+'" aria-pressed="'+(pl.id===ev3.playerId)+'">' +
+          ava(pl,'sm')+esc(pl.name)+'</button>'; }).join('') + '</div>');
+  }
+  if(d.ereas){
+    var rb=d.ereas.split('|'), ev4=byId(S.events,rb[0]); if(!ev4) return;
+    var copy2={}; for(var k2 in ev4) copy2[k2]=ev4[k2];
+    copy2.playerId=rb[1];
+    put('events', copy2);
+    var pl2=byId(S.players,rb[1]);
+    toast('Attribué à ' + (pl2?pl2.name:''));
+    if(ev4.chId) progSheet(ev4.chId); else closeSheet();
+    return;
+  }
   if(d.delch){
     if(d.armed){
       var ops=S.events.filter(function(e){ return e.chId===d.delch; })
