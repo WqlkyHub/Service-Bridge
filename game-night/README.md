@@ -14,10 +14,13 @@ l'écran d'accueil » installe l'app : elle fonctionne ensuite hors connexion
 
 ## 2. À plusieurs sur le même Wi-Fi
 
-Sur un ordinateur du réseau :
+**C'est le mode à utiliser pour jouer à plusieurs : il ne demande aucun compte.**
+
+Sur un ordinateur du réseau, dans ce dossier :
 
 ```bash
-node server.js          # ou PORT=3000 node server.js
+cp soiree-depart.json soiree.json   # facultatif : démarre avec les joueurs et les 24 défis
+node server.js                      # ou PORT=3000 node server.js
 ```
 
 Le serveur affiche les adresses à ouvrir, par exemple `http://192.168.1.20:8080`.
@@ -41,6 +44,11 @@ Node 18 ou plus récent, aucune dépendance à installer.
 La même page publiée comme Artifact utilise la base partagée de Claude : tous
 ceux qui ouvrent le lien écrivent au même endroit, en direct, depuis n'importe
 quel réseau.
+
+**Limite à connaître :** une page qui déclare la capacité `db` est réservée à
+l'organisation de son propriétaire. Le lien fonctionne pour les personnes du
+même espace de travail Claude, pas pour un ami sur son compte personnel — pour
+eux, c'est le serveur local ci-dessus.
 
 L'app choisit son mode toute seule au démarrage — Artifact, puis serveur local,
 puis stockage local — et l'indique sous le titre.

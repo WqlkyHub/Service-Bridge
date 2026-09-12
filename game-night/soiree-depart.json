@@ -1,0 +1,319 @@
+{
+  "meta": {
+    "name": "La Manette d'Or",
+    "date": "2026-09-12",
+    "cats": [
+      {
+        "name": "TFT",
+        "slot": 0
+      },
+      {
+        "name": "Sport",
+        "slot": 1
+      },
+      {
+        "name": "LOL",
+        "slot": 2
+      },
+      {
+        "name": "VALO",
+        "slot": 3
+      },
+      {
+        "name": "Autres jeux",
+        "slot": 4
+      },
+      {
+        "name": "Nutrition",
+        "slot": 5
+      }
+    ]
+  },
+  "players": [
+    {
+      "id": "p1",
+      "name": "Sacha",
+      "slot": 0,
+      "createdAt": 1
+    },
+    {
+      "id": "p2",
+      "name": "Alexis",
+      "slot": 1,
+      "createdAt": 2
+    },
+    {
+      "id": "p3",
+      "name": "Thomas",
+      "slot": 2,
+      "createdAt": 3
+    }
+  ],
+  "challenges": [
+    {
+      "id": "c01",
+      "title": "Top 1 TFT ×10",
+      "note": "Dix premières places cumulées",
+      "cat": "TFT",
+      "points": null,
+      "scoring": "total",
+      "target": 10,
+      "unit": "top 1",
+      "createdAt": 101
+    },
+    {
+      "id": "c02",
+      "title": "3★ 5 cost sur TFT",
+      "note": "",
+      "cat": "TFT",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 102
+    },
+    {
+      "id": "c03",
+      "title": "Courir 21 km",
+      "note": "En une ou plusieurs sorties",
+      "cat": "Sport",
+      "points": null,
+      "scoring": "total",
+      "target": 21,
+      "unit": "km",
+      "createdAt": 103
+    },
+    {
+      "id": "c04",
+      "title": "100 tractions",
+      "note": "Cumulées sur la soirée",
+      "cat": "Sport",
+      "points": null,
+      "scoring": "total",
+      "target": 100,
+      "unit": "tractions",
+      "createdAt": 104
+    },
+    {
+      "id": "c05",
+      "title": "200 pompes",
+      "note": "Cumulées sur la soirée",
+      "cat": "Sport",
+      "points": null,
+      "scoring": "total",
+      "target": 200,
+      "unit": "pompes",
+      "createdAt": 105
+    },
+    {
+      "id": "c06",
+      "title": "200 squats",
+      "note": "Cumulés sur la soirée",
+      "cat": "Sport",
+      "points": null,
+      "scoring": "total",
+      "target": 200,
+      "unit": "squats",
+      "createdAt": 106
+    },
+    {
+      "id": "c07",
+      "title": "1 game 0 mort en ranked",
+      "note": "Ranked uniquement",
+      "cat": "LOL",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 107
+    },
+    {
+      "id": "c08",
+      "title": "Game à +30 kills/assists",
+      "note": "Sur une seule partie",
+      "cat": "LOL",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 108
+    },
+    {
+      "id": "c09",
+      "title": "1 penta sur LOL",
+      "note": "",
+      "cat": "LOL",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 109
+    },
+    {
+      "id": "c10",
+      "title": "Gagner 3 Arena",
+      "note": "",
+      "cat": "LOL",
+      "points": null,
+      "scoring": "total",
+      "target": 3,
+      "unit": "parties",
+      "createdAt": 110
+    },
+    {
+      "id": "c11",
+      "title": "1 cut en ranked",
+      "note": "",
+      "cat": "VALO",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 111
+    },
+    {
+      "id": "c12",
+      "title": "1 ace Valorant",
+      "note": "Cinq frags sur le même round",
+      "cat": "VALO",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 112
+    },
+    {
+      "id": "c13",
+      "title": "1 no scope",
+      "note": "",
+      "cat": "VALO",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 113
+    },
+    {
+      "id": "c14",
+      "title": "Win 3v3 ranked sur RL",
+      "note": "Rocket League",
+      "cat": "VALO",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 114
+    },
+    {
+      "id": "c15",
+      "title": "Gagner 5 retakes d’affilée",
+      "note": "Les cinq à la suite, sans en perdre un",
+      "cat": "VALO",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 115
+    },
+    {
+      "id": "c16",
+      "title": "Finir Minecraft hardcore",
+      "note": "",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 116
+    },
+    {
+      "id": "c17",
+      "title": "Top 1 Fall Guys",
+      "note": "",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 117
+    },
+    {
+      "id": "c18",
+      "title": "Top 1 Fortnite",
+      "note": "",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 118
+    },
+    {
+      "id": "c19",
+      "title": "Top 1 Meccha Chameleon",
+      "note": "",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 119
+    },
+    {
+      "id": "c20",
+      "title": "Top 1 Apex",
+      "note": "",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 120
+    },
+    {
+      "id": "c21",
+      "title": "Geoguessr à moins de 10 km",
+      "note": "Sur un round",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 121
+    },
+    {
+      "id": "c22",
+      "title": "Se faire insulter ou traiter de cheat",
+      "note": "En game, témoins à l’appui",
+      "cat": "Autres jeux",
+      "points": null,
+      "scoring": "total",
+      "target": 1,
+      "unit": "fois",
+      "createdAt": 122
+    },
+    {
+      "id": "c23",
+      "title": "2 kg de nuggets",
+      "note": "Sans quitter la table",
+      "cat": "Nutrition",
+      "points": null,
+      "scoring": "total",
+      "target": 2,
+      "unit": "kg",
+      "createdAt": 123
+    },
+    {
+      "id": "c24",
+      "title": "20 bières",
+      "note": "Sur toute la soirée",
+      "cat": "Nutrition",
+      "points": null,
+      "scoring": "total",
+      "target": 20,
+      "unit": "bières",
+      "createdAt": 124
+    }
+  ],
+  "events": []
+}
