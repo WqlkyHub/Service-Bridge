@@ -499,7 +499,7 @@ var PACKS = [
 var LS='manettedor.v2', LS_OLD='manettedor.v1', LS_ME='manettedor.me';
 var S = {meta:{name:"La Manette d'Or", date:new Date().toISOString().slice(0,10), cats:null}, players:[], challenges:[], events:[]};
 var MODE='local', DB=null, ME=null, LAN=null;
-var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null;
+var fState='tous', fCat='tous', fQ='', toastTimer=null, undoIds=null, toastCb=null, AS=null, loaded=false;
 
 function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
 function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){
@@ -611,6 +611,7 @@ function sortAll(){
 /* ================= synchro ================= */
 function boot(){
   loadLocal(); sortAll(); render();
+  if(!window.claude || typeof window.claude.use!=='function') loaded=true;   // hors ligne : rien à attendre
   if(window.claude && typeof window.claude.use==='function'){
     window.claude.use('db').then(function(db){ if(db) startCloud(db); }).catch(function(){});
     return;
@@ -624,10 +625,19 @@ function startCloud(db){
   db.doc('meta/config').onSnapshot(function(s){ if(s.exists){ var d=s.data(); for(var k in d) S.meta[k]=d[k]; render(); } }, function(){});
   ['players','challenges','events'].forEach(function(coll){
     db.collection(coll).onSnapshot(function(snap){
-      S[coll]=snap.docs.map(function(d){ var o=d.data()||{}; o.id=d.id; return o; });
-      sortAll(); render();
+      // data() renvoie un objet GELÉ : on copie avant d'y ajouter l'identifiant,
+      // sinon l'écriture lève en mode strict et toute la lecture de la base meurt.
+      S[coll]=snap.docs.map(function(d){
+        var src=d.data()||{}, obj={};
+        for(var k in src) obj[k]=src[k];
+        obj.id=d.id;
+        return obj;
+      });
+      sortAll();
+      if(coll==='challenges') loaded=true;
+      render();
       if(coll in seen){ seen[coll]=true; seed(); }
-    }, function(){});
+    }, function(err){ toast('Lecture impossible ('+((err&&err.code)||'erreur')+')'); });
   });
   function seed(){
     if(!seen.players||!seen.challenges) return;
@@ -645,6 +655,7 @@ function startLan(){
   fetch('api/state', {cache:'no-store'}).then(function(r){ return r.ok ? r.json() : Promise.reject(0); })
   .then(function(d){
     MODE='lan'; LAN={rev:d.rev||0, host:d.host||location.host};
+    loaded=true;
     applyRemote(d.state);
     var es = new EventSource('api/events');
     es.addEventListener('state', function(m){
@@ -1330,10 +1341,13 @@ function applyBareme(){
 function addPack(id){
   var pk=null; PACKS.forEach(function(p){ if(p.id===id) pk=p; });
   if(!pk) return;
-  var have={}; S.challenges.forEach(function(c){ have[c.title]=1; });
+  if(!loaded) return toast('Chargement de la soirée en cours…');
+  // comparaison insensible à la casse et aux accents : un pack ne peut pas
+  // recréer un défi déjà présent
+  var have={}; S.challenges.forEach(function(c){ have[norm(c.title)]=1; });
   var now=Date.now(), added=false, ops=[];
   pk.items.forEach(function(it,i){
-    if(have[it[0]]) return;
+    if(have[norm(it[0])]) return;
     added = ensureCat(it[2], true) || added;
     ops.push({op:'put', coll:'challenges', obj:{id:uid(), title:it[0], note:it[1], cat:it[2],
       points:null, scoring:'total', target:it[3], unit:it[4], createdAt:now+i}});
