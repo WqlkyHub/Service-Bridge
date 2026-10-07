@@ -24,3 +24,33 @@ La stack, dans l'ordre :
 **L'erreur à éviter (son conseil principal) :** changer d'outils à chaque projet pour tester les nouveautés (Vue.js, etc.). À chaque fois il repartait de zéro. La solution n'est pas d'avoir la stack parfaite, c'est de **toujours garder la même stack** et de la connaître par cœur. On peut alors réutiliser des morceaux d'un projet à l'autre, et l'IA sait d'avance comment chaque site est construit (site vitrine Next.js sur Cloudflare, app sur Vercel). Il a migré tous ses anciens sites sur cette stack avec l'IA et s'est fait un template qui lui permet de lancer un site en une journée.
 
 **À retenir :** choisir une stack et arrêter d'en changer. À réutiliser quand on fera évoluer Service-Bridge (aujourd'hui un site statique `index.html` + PWA) vers un vrai SaaS.
+
+### Checklist sécurité avant de mettre un SaaS en ligne
+
+Source : TikTok de The Saas Daddy (@thesaasdaddy), « Les 20 trucs à verrouiller avant de mettre ton SaaS en ligne (en 45 secondes) ».
+https://vm.tiktok.com/ZGdC2GC6u/ (vidéo 7675005181599223073, 44 s). Sauvegardé le 2026-10-07 à partir de la transcription et de la liste affichée à l'écran.
+
+À vérifier avant tout lancement (et à faire relire par Claude sur le code) :
+
+1. **Clés API dans un `.env`**, jamais en dur dans le code.
+2. **`.env` dans le `.gitignore`.**
+3. **Rate limiting sur la page de connexion.**
+4. **RLS (Row Level Security) activée** sur la base de données.
+5. **Mots de passe hachés**, jamais lisibles.
+6. **Droits vérifiés côté serveur**, pas dans le navigateur.
+7. **Seulement la clé publique côté client**, jamais la clé secrète.
+8. **HTTPS partout.**
+9. **Sessions qui expirent.**
+10. **Inputs validés** : tout ce que l'utilisateur tape est vérifié avant d'aller en base.
+11. **Taille maximum sur les fichiers uploadés.**
+12. **Type de fichier vérifié** sur les uploads.
+13. **CORS configuré.**
+14. **Messages d'erreur détaillés coupés en production.**
+15. **`console.log` propres**, rien de verbeux en production.
+16. **Un seul message d'erreur pour l'email et le mot de passe** (ne pas révéler lequel est faux).
+17. **Webhooks protégés par une signature.**
+18. **Dépendances à jour.**
+19. **Email confirmé à l'inscription.**
+20. **Sauvegarde automatique de la base de données.**
+
+Avec la stack ci-dessus : la RLS concerne Postgres sur Neon ; BetterAuth gère le hachage des mots de passe, les sessions et la confirmation d'email, mais il faut l'activer et le configurer.
