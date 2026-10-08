@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' sfxlib: https:; connect-src 'self' sfxlib:; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Sonothèque</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-logo" aria-hidden="true">◉</span> Sonothèque</div>
+    <nav class="tabs" role="tablist">
+      <button id="tab-library" class="tab active" role="tab" aria-selected="true" type="button">🎧 Ma bibliothèque <span id="lib-count" class="tab-count">0</span></button>
+      <button id="tab-online" class="tab" role="tab" aria-selected="false" type="button">🌐 Chercher en ligne</button>
+    </nav>
+    <div class="top-actions">
+      <label class="switch" title="Masquer les sons sous licence non commerciale ou inconnue (vidéos monétisées, clients)">
+        <input id="toggle-commercial" type="checkbox"> <span>Usage commercial</span>
+      </label>
+      <label class="switch" title="Écouter automatiquement en naviguant avec ↑ ↓">
+        <input id="toggle-autoplay" type="checkbox"> <span>Écoute auto</span>
+      </label>
+      <button id="btn-import-files" class="btn btn-primary" type="button" title="Importer des fichiers audio (Ctrl + I)">＋ Importer</button>
+      <button id="btn-import-folder" class="btn" type="button" title="Importer un dossier entier">📁 Dossier</button>
+      <button id="help-btn" class="icon-btn" type="button" title="Raccourcis clavier" aria-label="Raccourcis clavier">⌨</button>
+      <button id="btn-settings" class="icon-btn" type="button" title="Réglages" aria-label="Réglages">⚙</button>
+    </div>
+  </header>
+
+  <main class="views">
+    <section id="view-library" class="view" role="tabpanel" aria-labelledby="tab-library"></section>
+    <section id="view-online" class="view" role="tabpanel" aria-labelledby="tab-online" hidden></section>
+  </main>
+
+  <footer id="player" class="player" aria-label="Lecteur"></footer>
+
+  <div id="drop-zone" class="drop-zone" hidden>
+    <div class="drop-inner">
+      <div class="drop-icon">⬇</div>
+      <div>Dépose tes fichiers ou dossiers audio pour les ajouter à la bibliothèque</div>
+    </div>
+  </div>
+
+  <script type="module" src="js/app.mjs"></script>
+</body>
+</html>

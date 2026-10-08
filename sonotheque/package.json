@@ -1,0 +1,40 @@
+{
+  "name": "sonotheque",
+  "productName": "Sonothèque",
+  "version": "0.1.0",
+  "description": "Banque de sons locale (SFX, ambiances, musiques) avec recherche en ligne par mots-clés, pour le montage vidéo.",
+  "main": "src/main/main.mjs",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test \"test/*.test.mjs\"",
+    "dist": "electron-builder --win nsis portable",
+    "dist:dir": "electron-builder --win --dir"
+  },
+  "dependencies": {
+    "music-metadata": "11.15.0"
+  },
+  "devDependencies": {
+    "electron": "44.4.3",
+    "electron-builder": "26.16.1"
+  },
+  "build": {
+    "appId": "fr.sonotheque.app",
+    "productName": "Sonothèque",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "artifactName": "Sonotheque-${version}-${arch}-${target}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
