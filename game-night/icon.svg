@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="La Manette d'Or">
+  <rect width="512" height="512" fill="#121214"/>
+  <circle cx="256" cy="212" r="62" fill="#d9f23c"/>
+  <path d="M168 330h176" stroke="#d9f23c" stroke-width="40" stroke-linecap="round"/>
+  <path d="M206 386h100" stroke="#55555f" stroke-width="28" stroke-linecap="round"/>
+</svg>
