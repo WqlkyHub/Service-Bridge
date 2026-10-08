@@ -29,6 +29,33 @@ protocol.registerSchemesAsPrivileged([
   { scheme: SCHEME, privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
 ]);
 
+// ---------------------------------------------------------------------------
+// Journal des erreurs : en cas de plantage, l'erreur est écrite dans un fichier et affichée,
+// au lieu que l'appli se ferme sans rien dire.
+
+function logError(context, err) {
+  const text = `[${new Date().toISOString()}] ${context}\n${err?.stack ?? err}\n\n`;
+  try {
+    const dir = app.getPath('userData');
+    fs.mkdirSync(dir, { recursive: true });
+    fs.appendFileSync(path.join(dir, 'erreurs.log'), text);
+  } catch { /* rien de plus à faire */ }
+  console.error(text);
+}
+
+function fatal(context, err) {
+  logError(context, err);
+  let where = '';
+  try {
+    where = `\n\nDétails enregistrés dans :\n${path.join(app.getPath('userData'), 'erreurs.log')}`;
+  } catch { /* chemin indisponible */ }
+  dialog.showErrorBox('Sonothèque : erreur au démarrage', `${err?.message ?? err}${where}`);
+  app.exit(1);
+}
+
+process.on('uncaughtException', (err) => logError('Erreur non gérée', err));
+process.on('unhandledRejection', (err) => logError('Promesse rejetée', err));
+
 // Dossier de données séparé (tests automatiques, ou plusieurs profils).
 if (process.env.SONOTHEQUE_DATA_DIR) app.setPath('userData', process.env.SONOTHEQUE_DATA_DIR);
 
@@ -157,7 +184,8 @@ function createWindow() {
     minWidth: 920,
     minHeight: 600,
     title: 'Sonothèque',
-    backgroundColor: '#14151c',
+    backgroundColor: '#111217',
+    show: false,
     autoHideMenuBar: true,
     webPreferences: {
       preload: PRELOAD,
@@ -168,6 +196,19 @@ function createWindow() {
     },
   });
   mainWindow.loadFile(RENDERER);
+  // Toujours afficher la fenêtre au premier plan, même si l'appli a été lancée « réduite ».
+  const reveal = () => {
+    if (!mainWindow || mainWindow.isDestroyed() || mainWindow.isVisible()) return;
+    if (mainWindow.isMinimized()) mainWindow.restore();
+    mainWindow.show();
+    mainWindow.focus();
+  };
+  mainWindow.once('ready-to-show', reveal);
+  setTimeout(reveal, 4000); // filet de sécurité si l'interface tarde à se charger
+  mainWindow.webContents.on('render-process-gone', (_e, details) => logError('Interface plantée', details.reason));
+  mainWindow.webContents.on('console-message', (e) => {
+    if (e.level === 'error') logError('Interface', e.message);
+  });
 
   // Liens externes : toujours dans le navigateur, jamais dans l'appli.
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -462,36 +503,40 @@ app.userAgentFallback = app.userAgentFallback
   .replace(/[^\x20-\x7e]/g, '');
 
 app.whenReady().then(() => {
-  setFetch((url, opts) => net.fetch(url, opts));
+  try {
+    setFetch((url, opts) => net.fetch(url, opts));
 
-  const crypto = safeStorage.isEncryptionAvailable()
-    ? {
-        encrypt: (s) => safeStorage.encryptString(s).toString('base64'),
-        decrypt: (s) => safeStorage.decryptString(Buffer.from(s, 'base64')),
+    const crypto = safeStorage.isEncryptionAvailable()
+      ? {
+          encrypt: (s) => safeStorage.encryptString(s).toString('base64'),
+          decrypt: (s) => safeStorage.decryptString(Buffer.from(s, 'base64')),
+        }
+      : null;
+    settings = createSettingsStore({
+      file: path.join(app.getPath('userData'), 'reglages.json'),
+      defaultLibraryPath: path.join(app.getPath('music'), 'Sonotheque'),
+      crypto,
+    });
+    openLibrary(settings.get().libraryPath);
+    synth = createSynth();
+
+    protocol.handle(SCHEME, serveLibraryFile);
+    if (app.isPackaged) Menu.setApplicationMenu(null);
+    registerIpc();
+    createWindow();
+
+    app.on('second-instance', () => {
+      if (mainWindow) {
+        if (mainWindow.isMinimized()) mainWindow.restore();
+        mainWindow.focus();
       }
-    : null;
-  settings = createSettingsStore({
-    file: path.join(app.getPath('userData'), 'reglages.json'),
-    defaultLibraryPath: path.join(app.getPath('music'), 'Sonotheque'),
-    crypto,
-  });
-  openLibrary(settings.get().libraryPath);
-  synth = createSynth();
-
-  protocol.handle(SCHEME, serveLibraryFile);
-  if (app.isPackaged) Menu.setApplicationMenu(null);
-  registerIpc();
-  createWindow();
-
-  app.on('second-instance', () => {
-    if (mainWindow) {
-      if (mainWindow.isMinimized()) mainWindow.restore();
-      mainWindow.focus();
-    }
-  });
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow();
-  });
+    });
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) createWindow();
+    });
+  } catch (err) {
+    fatal('Démarrage', err);
+  }
 });
 
 app.on('before-quit', () => {

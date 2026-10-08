@@ -26,6 +26,8 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 3. Double-clique sur **`Lancer-Sonotheque.bat`**.
    - Le premier lancement télécharge ce dont l'appli a besoin (environ 2 minutes, une seule fois).
    - Les lancements suivants sont immédiats.
+   - Si Windows affiche « Windows a protégé votre ordinateur » : « Informations complémentaires » → « Exécuter quand même ».
+   - **Si la fenêtre ne s'ouvre pas** : double-clique sur **`Diagnostic.bat`**. Il lance l'appli en affichant tous ses messages : fais une capture de la fenêtre noire. Les erreurs sont aussi enregistrées dans `%APPDATA%\Sonothèque\erreurs.log`.
 
 ### Option B : créer un vrai installateur `.exe`
 
