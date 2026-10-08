@@ -1,0 +1,46 @@
+// Vent : bruit rose filtré dont la couleur et le volume bougent au hasard, avec sifflements.
+recipe({
+  name: 'Vent',
+  description: 'Ambiance de vent, du léger souffle à la tempête.',
+  category: 'ambiance',
+  keywords: ['vent', 'ambiance', 'nature'],
+  params: {
+    duration: { label: 'Durée', min: 5, max: 60, default: 15, step: 1, unit: 's' },
+    strength: { label: 'Force', min: 0, max: 1, default: 0.5, step: 0.01 },
+    gusts: { label: 'Rafales', min: 0, max: 1, default: 0.5, step: 0.01 },
+  },
+  render({ p, noise, filter, gain, pan, env, chain, play, out, duration, rand }) {
+    const master = gain(0);
+    chain(master, out);
+    env(master.gain, [[0, 0], [Math.min(2, duration / 4), 1], [duration - Math.min(2, duration / 4), 1], [duration, 0]]);
+
+    const center = 300 + p.strength * 900;
+    for (const side of [-0.6, 0.6]) {
+      const n = noise('pink');
+      const bp = filter('bandpass', center, 0.7);
+      const g = gain(0.6);
+      chain(n, bp, g, pan(side), master);
+      const fPts = [];
+      const gPts = [];
+      for (let t = 0; t <= duration; t += rand(0.6, 1.8)) {
+        fPts.push([t, center * rand(0.55, 1.6)]);
+        gPts.push([t, rand(1 - p.gusts * 0.8, 1)]);
+      }
+      fPts.push([duration, center]);
+      gPts.push([duration, 0.8]);
+      env(bp.frequency, fPts);
+      env(g.gain, gPts);
+      play(n, 0, duration);
+
+      const w = noise('white');
+      const whistle = filter('bandpass', 1200, 12);
+      const wg = gain(0.04 + p.gusts * 0.12);
+      chain(w, whistle, wg, pan(side * 0.5), master);
+      const wPts = [];
+      for (let t = 0; t <= duration; t += rand(1, 3)) wPts.push([t, rand(700, 1600 + p.strength * 800)]);
+      wPts.push([duration, 1000]);
+      env(whistle.frequency, wPts);
+      play(w, 0, duration);
+    }
+  },
+});

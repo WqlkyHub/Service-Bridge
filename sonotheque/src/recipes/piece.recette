@@ -1,0 +1,22 @@
+// Pièce de jeu vidéo rétro (deux notes rapides).
+recipe({
+  name: 'Pièce (jeu vidéo)',
+  description: 'Ramassage de pièce ou de bonus, style rétro.',
+  category: 'sfx',
+  keywords: ['pièce', 'jeu vidéo', 'bonus'],
+  params: {
+    pitch: { label: 'Hauteur', min: 600, max: 2000, default: 988, step: 1, unit: 'Hz' },
+    wave: { label: 'Timbre', options: [{ value: 'square', label: 'Rétro' }, { value: 'triangle', label: 'Doux' }], default: 'square' },
+  },
+  duration: 0.6,
+  render({ p, osc, gain, env, chain, play, out }) {
+    const notes = [[0, p.pitch, 0.08], [0.08, p.pitch * 1.335, 0.5]];
+    for (const [t, f, len] of notes) {
+      const o = osc(p.wave, f);
+      const g = gain(0);
+      chain(o, g, out);
+      env(g.gain, [[t, 0.0001], [t + 0.002, 0.4], [t + len, 0.0001]], 'exp');
+      play(o, t, t + len);
+    }
+  },
+});

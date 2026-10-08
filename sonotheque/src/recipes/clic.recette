@@ -1,0 +1,26 @@
+// Petit clic d'interface : tic de bruit filtré + mini bip.
+recipe({
+  name: 'Clic interface',
+  description: "Clic de bouton, de souris ou d'interface, très court.",
+  category: 'sfx',
+  keywords: ['clic', 'interface', 'ui'],
+  params: {
+    tone: { label: 'Tonalité', min: 800, max: 6000, default: 2500, step: 10, unit: 'Hz' },
+    softness: { label: 'Douceur', min: 0, max: 1, default: 0.3, step: 0.01 },
+  },
+  duration: 0.12,
+  render({ p, osc, noise, filter, gain, env, chain, play, out }) {
+    const n = noise('white');
+    const bp = filter('bandpass', p.tone, 3);
+    const ng = gain(0);
+    chain(n, bp, ng, out);
+    env(ng.gain, [[0, 0.0001], [0.0008, 1], [0.004 + p.softness * 0.025, 0.0001]], 'exp');
+    play(n, 0, 0.06);
+
+    const s = osc('sine', p.tone * 0.5);
+    const sg = gain(0);
+    chain(s, sg, out);
+    env(sg.gain, [[0, 0.0001], [0.001, 0.4], [0.02 + p.softness * 0.03, 0.0001]], 'exp');
+    play(s, 0, 0.08);
+  },
+});

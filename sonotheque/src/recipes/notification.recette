@@ -1,0 +1,33 @@
+// Petite mélodie de notification (2 ou 3 notes en cloche).
+recipe({
+  name: 'Notification',
+  description: 'Ding de message, de réussite ou d’alerte douce.',
+  category: 'sfx',
+  keywords: ['notification', 'ding', 'interface'],
+  params: {
+    style: {
+      label: 'Style',
+      options: [{ value: 'up', label: 'Montant (succès)' }, { value: 'down', label: 'Descendant (erreur)' }, { value: 'single', label: 'Une note' }],
+      default: 'up',
+    },
+    pitch: { label: 'Hauteur', min: 300, max: 1500, default: 880, step: 1, unit: 'Hz' },
+    space: { label: 'Réverbération', min: 0, max: 1, default: 0.3, step: 0.01 },
+  },
+  duration: (p) => (p.style === 'single' ? 1 : 1.3),
+  render({ p, osc, gain, reverb, env, chain, play, out }) {
+    const send = gain(p.space * 0.6);
+    chain(send, reverb(1.5, 3), out);
+    const ratios = p.style === 'up' ? [1, 1.26, 1.5] : p.style === 'down' ? [1.5, 1.26, 1] : [1];
+    ratios.forEach((r, i) => {
+      const t = i * 0.11;
+      for (const [mult, level] of [[1, 0.6], [2, 0.18], [3.01, 0.06]]) {
+        const o = osc('sine', p.pitch * r * mult);
+        const g = gain(0);
+        chain(o, g, out);
+        g.connect(send);
+        env(g.gain, [[t, 0.0001], [t + 0.004, level], [t + 0.9, 0.0001]], 'exp');
+        play(o, t, t + 0.95);
+      }
+    });
+  },
+});

@@ -39,6 +39,16 @@ contextBridge.exposeInMainWorld('sono', {
     disconnectFreesound: () => ipcRenderer.invoke('freesound:disconnect'),
   },
 
+  gen: {
+    recipes: () => ipcRenderer.invoke('gen:recipes'),
+    render: (params) => ipcRenderer.invoke('gen:render', params),
+    test: (code) => ipcRenderer.invoke('gen:test', code),
+    saveRecipe: (params) => ipcRenderer.invoke('gen:saveRecipe', params),
+    openRecipes: () => ipcRenderer.invoke('gen:openRecipes'),
+    prompt: () => ipcRenderer.invoke('gen:prompt'),
+    save: (params) => ipcRenderer.invoke('gen:save', params),
+  },
+
   openExternal: (url) => ipcRenderer.invoke('shell:open', url),
   copy: (text) => ipcRenderer.invoke('clipboard:write', text),
   /** Chemin d'un fichier glissé depuis l'Explorateur Windows. */

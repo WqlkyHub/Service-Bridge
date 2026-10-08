@@ -1,0 +1,28 @@
+// Bips électroniques (réveil, compte à rebours, appareil).
+recipe({
+  name: 'Bip',
+  description: 'Bips électroniques : appareil, alarme, compte à rebours.',
+  category: 'sfx',
+  keywords: ['bip', 'électronique', 'alarme'],
+  params: {
+    pitch: { label: 'Hauteur', min: 300, max: 3000, default: 1000, step: 10, unit: 'Hz' },
+    count: { label: 'Nombre', min: 1, max: 6, default: 1, step: 1 },
+    length: { label: 'Longueur', min: 0.05, max: 0.6, default: 0.15, step: 0.01, unit: 's' },
+    wave: {
+      label: 'Timbre',
+      options: [{ value: 'sine', label: 'Doux' }, { value: 'square', label: 'Rétro' }, { value: 'triangle', label: 'Moyen' }],
+      default: 'sine',
+    },
+  },
+  duration: (p) => p.count * p.length * 2,
+  render({ p, osc, gain, filter, env, chain, play, out }) {
+    for (let i = 0; i < p.count; i++) {
+      const t = i * p.length * 2;
+      const o = osc(p.wave, p.pitch);
+      const g = gain(0);
+      chain(o, filter('lowpass', 8000, 0.7), g, out);
+      env(g.gain, [[t, 0], [t + 0.003, p.wave === 'square' ? 0.35 : 0.8], [t + p.length - 0.003, p.wave === 'square' ? 0.35 : 0.8], [t + p.length, 0]]);
+      play(o, t, t + p.length + 0.01);
+    }
+  },
+});

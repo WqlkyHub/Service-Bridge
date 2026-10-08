@@ -70,6 +70,13 @@ test('licences : codes et niveaux', () => {
   assert.ok(allowedCommercially(describeLicense('own')));
 });
 
+test('licence des sons générés : libres, utilisables commercialement', () => {
+  const g = describeLicense('generated');
+  assert.equal(g.label, 'Créé par toi');
+  assert.equal(g.level, 'free');
+  assert.ok(allowedCommercially(g));
+});
+
 test('ligne de crédit', () => {
   const line = creditLine({ title: 'Rain', author: 'InspectorJ', sourceLabel: 'Freesound', license: describeLicense('by', { version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0/' }), pageUrl: 'https://freesound.org/s/1/' });
   assert.equal(line, '« Rain » par InspectorJ (Freesound) – CC BY 4.0 (https://creativecommons.org/licenses/by/4.0/) – https://freesound.org/s/1/');

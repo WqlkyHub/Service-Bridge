@@ -4,6 +4,8 @@ import { h, $, Emitter } from './dom.mjs';
 import { Player } from './player.mjs';
 import { LibraryView } from './library-view.mjs';
 import { OnlineView } from './online-view.mjs';
+import { GenerateView } from './generate-view.mjs';
+import { icon } from './icons.mjs';
 import { importDialog, settingsDialog } from './dialogs.mjs';
 import { isModalOpen } from './modal.mjs';
 import { toast } from './toast.mjs';
@@ -56,9 +58,14 @@ async function main() {
   store.libraryRoot = data.library.root;
   store.items = new Map(data.library.items.map((it) => [it.id, it]));
 
+  // Icônes de la barre du haut (balises data-icon du HTML).
+  for (const el of document.querySelectorAll('[data-icon]')) el.replaceWith(icon(el.dataset.icon, { size: el.classList.contains('chev') ? 14 : 16, className: el.className }));
+
   const player = new Player($('#player'), {
     volume: data.settings.volume,
     onVolume: debounceSave((v) => sono.settings.update({ volume: v }), 400),
+    autoplay: prefs.autoplay,
+    onAutoplay: (on) => writePref('autoplay', on),
   });
 
   let activeTab = 'library';
@@ -70,6 +77,7 @@ async function main() {
       const paths = await sono.library.pick(mode);
       if (paths.length) importDialog(paths, { settings: store.settings });
     },
+    goGenerate: () => switchTab('generate'),
     goOnline: (q) => {
       switchTab('online');
       if (q) online.setQuery(q);
@@ -88,12 +96,14 @@ async function main() {
 
   const library = new LibraryView($('#view-library'), ctx);
   const online = new OnlineView($('#view-online'), ctx);
-  const views = { library, online };
+  const generate = new GenerateView($('#view-generate'), ctx);
+  const views = { library, online, generate };
 
   // --- En-tête -------------------------------------------------------------
   const tabs = {
     library: $('#tab-library'),
     online: $('#tab-online'),
+    generate: $('#tab-generate'),
   };
   const libCount = $('#lib-count');
   const updateCount = () => { libCount.textContent = String(store.items.size); };
@@ -107,12 +117,34 @@ async function main() {
       el.setAttribute('aria-selected', String(id === tab));
       $(`#view-${id}`).hidden = id !== tab;
     }
+    if (tab === 'generate') generate.activate();
+    // Les lignes dessinées pendant que l'onglet était caché n'ont pas leur forme d'onde.
+    if (tab === 'library') library.list.refresh();
   }
   tabs.library.addEventListener('click', () => { switchTab('library'); library.focusSearch(); });
   tabs.online.addEventListener('click', () => { switchTab('online'); online.focusSearch(); });
+  tabs.generate.addEventListener('click', () => switchTab('generate'));
 
-  $('#btn-import-files').addEventListener('click', () => ctx.importPick('files'));
-  $('#btn-import-folder').addEventListener('click', () => ctx.importPick('folder'));
+  // Menu « Importer »
+  const importBtn = $('#btn-import');
+  const importMenu = $('#import-menu');
+  const closeMenu = () => {
+    importMenu.hidden = true;
+    importBtn.setAttribute('aria-expanded', 'false');
+  };
+  importBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    importMenu.hidden = !importMenu.hidden;
+    importBtn.setAttribute('aria-expanded', String(!importMenu.hidden));
+    if (!importMenu.hidden) importMenu.querySelector('button').focus();
+  });
+  importMenu.addEventListener('click', (e) => {
+    const mode = e.target.closest('button')?.dataset.mode;
+    closeMenu();
+    if (mode) ctx.importPick(mode);
+  });
+  document.addEventListener('click', closeMenu);
+  importMenu.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeMenu(); importBtn.focus(); } });
   $('#btn-settings').addEventListener('click', () => settingsDialog(ctx));
 
   const commercial = $('#toggle-commercial');
@@ -125,9 +157,6 @@ async function main() {
       : 'Tous les sons sont affichés (vérifie la licence avant usage).', 'info');
   });
 
-  const autoplay = $('#toggle-autoplay');
-  autoplay.checked = prefs.autoplay;
-  autoplay.addEventListener('change', () => writePref('autoplay', autoplay.checked));
 
   store.on('items', updateCount);
   store.on('settings', () => { commercial.checked = store.settings.commercialOnly; });
@@ -177,13 +206,25 @@ async function main() {
     if (mod && e.key.toLowerCase() === 'f') { e.preventDefault(); view.focusSearch(); return; }
     if (mod && e.key === '1') { e.preventDefault(); switchTab('library'); library.focusSearch(); return; }
     if (mod && e.key === '2') { e.preventDefault(); switchTab('online'); online.focusSearch(); return; }
+    if (mod && e.key === '3') { e.preventDefault(); switchTab('generate'); return; }
     if (mod && e.key.toLowerCase() === 'i') { e.preventDefault(); ctx.importPick('files'); return; }
     if (e.key === 'Escape') {
+      if (e.target.classList?.contains('search') && e.target.value) {
+        // Échap vide la recherche (et met la liste à jour).
+        e.target.value = '';
+        e.target.dispatchEvent(new Event('input'));
+        return;
+      }
       if (inField) e.target.blur();
       hideTooltip();
       return;
     }
     if (inField) return;
+    if (activeTab === 'generate') {
+      if (e.key === ' ') { e.preventDefault(); player.toggle(); }
+      else if (e.key === 'l' || e.key === 'L') player.setLoop(!player.audio.loop);
+      return;
+    }
 
     switch (e.key) {
       case '/': e.preventDefault(); view.focusSearch(); break;
@@ -238,7 +279,7 @@ function showHelp() {
       ['F', 'Favori'],
       ['E', 'Modifier les mots-clés'],
       ['Suppr', 'Supprimer la sélection'],
-      ['Ctrl + 1 / Ctrl + 2', 'Ma bibliothèque / Chercher en ligne'],
+      ['Ctrl + 1 / 2 / 3', 'Bibliothèque / En ligne / Générer'],
       ['Ctrl + I', 'Importer des fichiers'],
       ['Glisser une ligne', 'Déposer le son dans Premiere Pro / DaVinci Resolve'],
       ['Ctrl / Maj + clic', 'Sélection multiple (pour glisser plusieurs sons)'],

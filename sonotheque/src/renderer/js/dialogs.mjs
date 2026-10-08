@@ -5,6 +5,7 @@ import { openModal, confirmDialog } from './modal.mjs';
 import { keywordInput } from './keyword-input.mjs';
 import { sourceBadge, licenseBadge, sourceName } from './badges.mjs';
 import { toast } from './toast.mjs';
+import { icon } from './icons.mjs';
 import { MEDIA_KINDS, guessCategory } from '../../shared/media-kinds.mjs';
 import { suggestFromOnline, cleanKeywords, usefulWords } from '../../shared/keywords.mjs';
 import { LEVEL_INFO, creditLine } from '../../shared/licenses.mjs';
@@ -16,12 +17,12 @@ const MAX_ROWS_SHOWN = 300;
 function categorySelect(value, { withAuto = false } = {}) {
   return h('select', { class: 'select' },
     withAuto ? h('option', { value: '' }, 'Auto (selon chaque fichier)') : null,
-    Object.entries(CATEGORIES).map(([id, c]) => h('option', { value: id, selected: id === value }, `${c.icon} ${c.label}`)));
+    Object.entries(CATEGORIES).map(([id, c]) => h('option', { value: id, selected: id === value }, c.label)));
 }
 
 function categoryChips(value, onChange) {
   let current = value;
-  const wrap = h('div', { class: 'cat-chips', role: 'radiogroup', 'aria-label': 'Catégorie' });
+  const wrap = h('div', { class: 'seg', role: 'radiogroup', 'aria-label': 'Catégorie' });
   const render = () => {
     clear(wrap);
     for (const [id, c] of Object.entries(CATEGORIES)) {
@@ -31,7 +32,7 @@ function categoryChips(value, onChange) {
         role: 'radio',
         'aria-checked': String(id === current),
         onclick: () => { current = id; render(); onChange?.(id); },
-      }, `${c.icon} ${c.label}`));
+      }, h('span', { class: ['dot', `dot-${id}`] }), c.label));
     }
   };
   render();
@@ -248,8 +249,8 @@ export function editDialog(item, { onDeleted } = {}) {
         s.provider === 'local' && s.originalPath ? h('div', { class: 'field-hint' }, `Fichier d'origine : ${s.originalPath}`) : null,
         licenseWarning(s.license),
         h('div', { class: 'edit-buttons' },
-          credit ? h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { sono.copy(credit); toast('Crédit copié : colle-le dans la description de ta vidéo.', 'ok'); } }, '📋 Copier le crédit') : null,
-          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => sono.library.reveal(item.id) }, '📂 Afficher dans l\'Explorateur'))),
+          credit ? h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { sono.copy(credit); toast('Crédit copié : colle-le dans la description de ta vidéo.', 'ok'); } }, icon('copy', { size: 14 }), 'Copier le crédit') : null,
+          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => sono.library.reveal(item.id) }, icon('folder', { size: 14 }), "Afficher dans l'Explorateur"))),
     ],
     actions: [
       {
@@ -351,7 +352,7 @@ export function settingsDialog(ctx) {
         h('h3', {}, 'Bibliothèque'),
         h('div', { class: 'row-inline' }, 'Dossier : ', libPath),
         h('div', { class: 'row-inline' },
-          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => sono.library.openRoot() }, '📂 Ouvrir le dossier'),
+          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => sono.library.openRoot() }, icon('folder', { size: 14 }), 'Ouvrir le dossier'),
           h('button', { class: 'btn btn-sm', type: 'button', onclick: async () => {
             const r = await sono.settings.pickLibrary();
             if (r) {
@@ -383,8 +384,8 @@ export function settingsDialog(ctx) {
         field('Client ID', jmClient)),
 
       h('p', { class: 'field-hint' }, st.encrypted
-        ? '🔒 Tes clés sont chiffrées sur ton ordinateur (coffre de Windows) et ne quittent jamais ton PC, sauf vers la source concernée.'
-        : '⚠ Chiffrement indisponible sur ce système : les clés sont stockées en clair dans le dossier de l\'appli.'),
+        ? 'Tes clés sont chiffrées sur ton ordinateur (coffre de Windows) et ne quittent jamais ton PC, sauf vers la source concernée.'
+        : 'Attention : chiffrement indisponible sur ce système : les clés sont stockées en clair dans le dossier de l\'appli.'),
     ],
     actions: [
       { label: 'Annuler' },

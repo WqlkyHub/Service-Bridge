@@ -3,42 +3,58 @@
 <head>
   <meta charset="utf-8">
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' sfxlib: https:; connect-src 'self' sfxlib:; object-src 'none'; base-uri 'none'; form-action 'none'">
+        content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self' sfxlib: https: blob:; connect-src 'self' sfxlib:; object-src 'none'; base-uri 'none'; form-action 'none'">
   <title>Sonothèque</title>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <header class="topbar">
-    <div class="brand"><span class="brand-logo" aria-hidden="true">◉</span> Sonothèque</div>
-    <nav class="tabs" role="tablist">
-      <button id="tab-library" class="tab active" role="tab" aria-selected="true" type="button">🎧 Ma bibliothèque <span id="lib-count" class="tab-count">0</span></button>
-      <button id="tab-online" class="tab" role="tab" aria-selected="false" type="button">🌐 Chercher en ligne</button>
+    <div class="brand"><span class="brand-mark" aria-hidden="true"></span>Sonothèque</div>
+
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button id="tab-library" class="tab active" role="tab" aria-selected="true" type="button">
+        <span data-icon="library"></span>Bibliothèque <span id="lib-count" class="tab-count">0</span>
+      </button>
+      <button id="tab-online" class="tab" role="tab" aria-selected="false" type="button">
+        <span data-icon="globe"></span>En ligne
+      </button>
+      <button id="tab-generate" class="tab" role="tab" aria-selected="false" type="button">
+        <span data-icon="sparkles"></span>Générer
+      </button>
     </nav>
+
     <div class="top-actions">
-      <label class="switch" title="Masquer les sons sous licence non commerciale ou inconnue (vidéos monétisées, clients)">
-        <input id="toggle-commercial" type="checkbox"> <span>Usage commercial</span>
+      <label class="toggle" title="Masque les sons sous licence non commerciale ou inconnue (vidéos monétisées, clients)">
+        <input id="toggle-commercial" type="checkbox">
+        <span class="toggle-track" aria-hidden="true"></span>
+        <span class="toggle-label">Usage commercial</span>
       </label>
-      <label class="switch" title="Écouter automatiquement en naviguant avec ↑ ↓">
-        <input id="toggle-autoplay" type="checkbox"> <span>Écoute auto</span>
-      </label>
-      <button id="btn-import-files" class="btn btn-primary" type="button" title="Importer des fichiers audio (Ctrl + I)">＋ Importer</button>
-      <button id="btn-import-folder" class="btn" type="button" title="Importer un dossier entier">📁 Dossier</button>
-      <button id="help-btn" class="icon-btn" type="button" title="Raccourcis clavier" aria-label="Raccourcis clavier">⌨</button>
-      <button id="btn-settings" class="icon-btn" type="button" title="Réglages" aria-label="Réglages">⚙</button>
+      <div class="menu-wrap">
+        <button id="btn-import" class="btn btn-primary" type="button" aria-haspopup="menu" aria-expanded="false" title="Importer des sons (Ctrl + I)">
+          <span data-icon="plus"></span>Importer<span data-icon="chevron" class="chev"></span>
+        </button>
+        <div id="import-menu" class="menu" role="menu" hidden>
+          <button type="button" role="menuitem" data-mode="files">Des fichiers…</button>
+          <button type="button" role="menuitem" data-mode="folder">Un dossier entier…</button>
+        </div>
+      </div>
+      <button id="help-btn" class="icon-btn" type="button" title="Raccourcis clavier" aria-label="Raccourcis clavier"><span data-icon="keyboard"></span></button>
+      <button id="btn-settings" class="icon-btn" type="button" title="Réglages" aria-label="Réglages"><span data-icon="settings"></span></button>
     </div>
   </header>
 
   <main class="views">
     <section id="view-library" class="view" role="tabpanel" aria-labelledby="tab-library"></section>
     <section id="view-online" class="view" role="tabpanel" aria-labelledby="tab-online" hidden></section>
+    <section id="view-generate" class="view" role="tabpanel" aria-labelledby="tab-generate" hidden></section>
   </main>
 
   <footer id="player" class="player" aria-label="Lecteur"></footer>
 
   <div id="drop-zone" class="drop-zone" hidden>
     <div class="drop-inner">
-      <div class="drop-icon">⬇</div>
-      <div>Dépose tes fichiers ou dossiers audio pour les ajouter à la bibliothèque</div>
+      <div class="drop-title">Dépose tes sons ici</div>
+      <div class="drop-sub">Fichiers ou dossiers audio : ils seront ajoutés à ta bibliothèque</div>
     </div>
   </div>
 

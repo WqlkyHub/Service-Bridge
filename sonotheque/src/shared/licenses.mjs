@@ -20,6 +20,7 @@ const CC_LABELS = {
   'sampling+': 'Sampling+',
   'nc-sampling+': 'NC Sampling+',
   'own': 'Perso',
+  'generated': 'Créé par toi',
   'unknown': 'Inconnue',
 };
 
@@ -30,6 +31,7 @@ const LEVEL_BY_CODE = {
   'by-nc': 'nc', 'by-nc-sa': 'nc', 'by-nc-nd': 'nc', 'nc-sampling+': 'nc',
   'sampling+': 'unknown',
   'own': 'own',
+  'generated': 'free',
   'unknown': 'unknown',
 };
 
@@ -50,6 +52,7 @@ export function licenseCode(input) {
   const s = String(input ?? '').toLowerCase().trim();
   if (!s) return 'unknown';
   if (s === 'own') return 'own';
+  if (s === 'generated') return 'generated';
   if (s.includes('publicdomain/zero') || s === 'cc0' || s.includes('creative commons 0')) return 'cc0';
   if (s.includes('publicdomain/mark') || s === 'pdm' || s.includes('public domain')) return 'pdm';
   if (s.includes('nc-sampling+') || s.includes('noncommercial sampling')) return 'nc-sampling+';
@@ -77,7 +80,7 @@ export function describeLicense(input, { url = null, version = null } = {}) {
   const code = licenseCode(input);
   const level = LEVEL_BY_CODE[code];
   let label = CC_LABELS[code];
-  if (version && !['cc0', 'pdm', 'own', 'unknown'].includes(code)) label += ` ${version}`;
+  if (version && !['cc0', 'pdm', 'own', 'generated', 'unknown'].includes(code)) label += ` ${version}`;
   return {
     code,
     label,

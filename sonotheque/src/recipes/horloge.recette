@@ -1,0 +1,24 @@
+// Tic-tac d'horloge.
+recipe({
+  name: 'Tic-tac',
+  description: "Horloge, minuteur, temps qui passe.",
+  category: 'sfx',
+  keywords: ['horloge', 'tic-tac', 'temps'],
+  params: {
+    duration: { label: 'Durée', min: 2, max: 30, default: 6, step: 0.5, unit: 's' },
+    bpm: { label: 'Tempo', min: 40, max: 180, default: 60, step: 1, unit: 'bpm' },
+    tone: { label: 'Tonalité', min: 1000, max: 6000, default: 3000, step: 10, unit: 'Hz' },
+  },
+  render({ p, noise, filter, gain, env, chain, play, out, duration }) {
+    const period = 60 / p.bpm;
+    let tick = true;
+    for (let t = 0.02; t < duration - 0.05; t += period) {
+      const n = noise('white');
+      const g = gain(0);
+      chain(n, filter('bandpass', tick ? p.tone : p.tone * 0.75, 6), g, out);
+      env(g.gain, [[t, 0.0001], [t + 0.001, 1], [t + 0.025, 0.0001]], 'exp');
+      play(n, t, t + 0.04);
+      tick = !tick;
+    }
+  },
+});

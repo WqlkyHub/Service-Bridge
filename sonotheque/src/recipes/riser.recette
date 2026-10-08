@@ -1,0 +1,43 @@
+// Montée de tension : bruit qui s'éclaircit + oscillateur qui grimpe + tremolo qui accélère.
+recipe({
+  name: 'Montée (riser)',
+  description: 'Tension qui monte avant une révélation ou un drop.',
+  category: 'sfx',
+  keywords: ['riser', 'montée', 'tension'],
+  params: {
+    duration: { label: 'Durée', min: 1, max: 10, default: 4, step: 0.1, unit: 's' },
+    start: { label: 'Départ', min: 80, max: 800, default: 200, step: 5, unit: 'Hz' },
+    end: { label: 'Arrivée', min: 800, max: 6000, default: 3000, step: 10, unit: 'Hz' },
+    intensity: { label: 'Intensité', min: 0, max: 1, default: 0.6, step: 0.01 },
+  },
+  tail: 0.6,
+  render({ p, osc, noise, filter, gain, reverb, env, chain, play, out, duration }) {
+    const send = gain(0.35);
+    chain(send, reverb(1.2, 3), out);
+
+    const n = noise('white');
+    const hp = filter('highpass', p.start, 0.9);
+    const ng = gain(0);
+    chain(n, hp, ng, out);
+    ng.connect(send);
+    env(hp.frequency, [[0, p.start], [duration, p.end]], 'exp');
+    env(ng.gain, [[0, 0.0001], [duration, 0.8]], 'exp');
+    play(n, 0, duration);
+
+    const saw = osc('sawtooth', p.start / 2);
+    const lp = filter('lowpass', p.start, 2);
+    const trem = gain(0.5);
+    const sg = gain(0);
+    chain(saw, lp, trem, sg, out);
+    sg.connect(send);
+    const lfo = osc('sine', 2);
+    const depth = gain(0.5);
+    chain(lfo, depth, trem.gain);
+    env(lfo.frequency, [[0, 2], [duration, 18]], 'exp');
+    env(saw.frequency, [[0, p.start / 2], [duration, p.end / 4]], 'exp');
+    env(lp.frequency, [[0, p.start], [duration, p.end * 1.5]], 'exp');
+    env(sg.gain, [[0, 0.0001], [duration, 0.2 + p.intensity * 0.4]], 'exp');
+    play(saw, 0, duration);
+    play(lfo, 0, duration);
+  },
+});

@@ -1,0 +1,34 @@
+// Tir laser de science-fiction : chute de fréquence rapide avec modulation.
+recipe({
+  name: 'Laser',
+  description: 'Tir laser rétro ou science-fiction.',
+  category: 'sfx',
+  keywords: ['laser', 'science-fiction', 'tir'],
+  params: {
+    duration: { label: 'Durée', min: 0.1, max: 1.5, default: 0.35, step: 0.01, unit: 's' },
+    start: { label: 'Départ', min: 800, max: 5000, default: 2500, step: 10, unit: 'Hz' },
+    end: { label: 'Arrivée', min: 50, max: 800, default: 150, step: 5, unit: 'Hz' },
+    wave: {
+      label: 'Caractère',
+      options: [{ value: 'sawtooth', label: 'Agressif' }, { value: 'square', label: 'Rétro' }, { value: 'sine', label: 'Doux' }],
+      default: 'sawtooth',
+    },
+  },
+  tail: 0.3,
+  render({ p, osc, gain, filter, reverb, env, chain, play, out, duration, rand }) {
+    const o = osc(p.wave, p.start);
+    const mod = osc('sine', rand(30, 60));
+    const depth = gain(p.start * 0.08);
+    chain(mod, depth, o.frequency);
+    const lp = filter('lowpass', 6000, 1);
+    const g = gain(0);
+    chain(o, lp, g, out);
+    const send = gain(0.25);
+    g.connect(send);
+    chain(send, reverb(0.4, 2), out);
+    env(o.frequency, [[0, p.start], [duration, p.end]], 'exp');
+    env(g.gain, [[0, 0.0001], [0.004, 0.7], [duration, 0.0001]], 'exp');
+    play(o, 0, duration);
+    play(mod, 0, duration);
+  },
+});

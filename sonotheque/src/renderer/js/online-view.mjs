@@ -3,7 +3,8 @@
 
 import { h, clear, formatDurationShort } from './dom.mjs';
 import { VirtualList } from './virtual-list.mjs';
-import { sourceBadge, licenseBadge, sourceCard } from './badges.mjs';
+import { provenance, sourceCard } from './badges.mjs';
+import { icon } from './icons.mjs';
 import { attachTooltip, hideTooltip } from './tooltip.mjs';
 import { addDialog, defaultChoice, settingsDialog } from './dialogs.mjs';
 import { toast } from './toast.mjs';
@@ -11,7 +12,7 @@ import { translateQuery } from '../../shared/synonyms.mjs';
 import { allowedCommercially } from '../../shared/licenses.mjs';
 
 const sono = window.sono;
-const ROW_HEIGHT = 62;
+const ROW_HEIGHT = 60;
 
 export class OnlineView {
   constructor(root, ctx) {
@@ -44,7 +45,7 @@ export class OnlineView {
 
   build(root) {
     this.search = h('input', {
-      class: 'search', type: 'search', placeholder: 'Chercher un son en ligne : pluie, porte qui grince, whoosh…',
+      class: 'search', type: 'text', placeholder: 'Chercher un son en ligne : pluie, porte qui grince, whoosh…',
       'aria-label': 'Chercher en ligne', spellcheck: false,
     });
     this.search.addEventListener('keydown', (e) => {
@@ -68,7 +69,7 @@ export class OnlineView {
 
     root.append(
       h('div', { class: 'toolbar' },
-        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon', 'aria-hidden': 'true' }, '🌐'), this.search, go),
+        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon' }, icon('globe', { size: 18 })), this.search, go),
         h('div', { class: 'filters' }, this.sourceChips),
         this.info),
       h('div', { class: 'list-wrap' }, this.listEl, this.empty),
@@ -165,51 +166,44 @@ export class OnlineView {
     this.sourceChips.append(h('button', {
       type: 'button', class: ['chip', !this.filterSource && 'chip-on'],
       onclick: () => { this.filterSource = null; this.render(); },
-    }, `Toutes${this.perSource.size ? ` (${totalLoaded})` : ''}`));
+    }, 'Toutes', this.perSource.size ? h('span', { class: 'n' }, totalLoaded) : null));
     for (const s of all) {
       const st = this.perSource.get(s.id);
-      let label = s.label;
-      let title = s.description;
-      let cls = '';
       if (!s.configured) {
-        label += ' · ⚠ clé';
-        title = 'Clé API manquante : clique pour ouvrir les Réglages.';
-        cls = 'chip-warn';
-      } else if (st?.loading) label += ' · …';
-      else if (st?.error) {
-        label += ' · ⚠';
-        title = st.error;
-        cls = 'chip-warn';
-      } else if (st) label += ` (${st.total > st.items.length ? `${st.items.length}/${st.total}` : st.items.length})`;
+        this.sourceChips.append(h('button', {
+          type: 'button', class: 'chip chip-muted', title: `${s.description} Clique pour ajouter ta clé gratuite.`,
+          onclick: () => settingsDialog(this.ctx),
+        }, icon('plus', { size: 12 }), `${s.label} (clé)`));
+        continue;
+      }
+      let extra = null;
+      if (st?.loading) extra = h('span', { class: 'spinner' });
+      else if (st && !st.error) extra = h('span', { class: 'n' }, st.items.length);
       this.sourceChips.append(h('button', {
-        type: 'button', class: ['chip', this.filterSource === s.id && 'chip-on', cls], title,
-        onclick: () => {
-          if (!s.configured) return settingsDialog(this.ctx);
-          this.filterSource = this.filterSource === s.id ? null : s.id;
-          this.render();
-        },
-      }, label));
+        type: 'button', class: ['chip', this.filterSource === s.id && 'chip-on', st?.error && 'chip-error'],
+        title: st?.error ?? s.description,
+        onclick: () => { this.filterSource = this.filterSource === s.id ? null : s.id; this.render(); },
+      }, s.label, extra));
     }
-    this.sourceChips.append(h('button', { type: 'button', class: 'chip chip-ghost', title: 'Activer / désactiver des sources, ajouter des clés', onclick: () => settingsDialog(this.ctx) }, '⚙ Sources'));
   }
 
   renderInfo(hidden) {
     clear(this.info);
     if (!this.userQuery) {
-      this.info.append('Le nom de la source et la licence sont affichés sur chaque son ; survole une ligne pour tous les détails.');
+      this.info.append('Source et licence sont indiquées sur chaque son ; survole une ligne pour tous les détails.');
       return;
     }
     if (this.translated) {
-      this.info.append(`Recherche envoyée en anglais : « ${this.sentQuery} » `,
-        h('button', { class: 'link', type: 'button', onclick: () => { this.forceOriginal = true; this.run(this.userQuery); } }, `(chercher « ${this.userQuery} » tel quel)`));
+      this.info.append(`Recherche envoyée en anglais : « ${this.sentQuery} »`,
+        h('button', { class: 'link', type: 'button', onclick: () => { this.forceOriginal = true; this.run(this.userQuery); } }, `chercher « ${this.userQuery} » tel quel`));
     } else {
       this.info.append(`Recherche : « ${this.sentQuery} »`);
     }
-    if (hidden) this.info.append(h('span', { class: 'warn' }, ` · ${hidden} résultat${hidden > 1 ? 's' : ''} masqué${hidden > 1 ? 's' : ''} (licence non commerciale ou inconnue)`));
+    if (hidden) this.info.append(h('span', {}, `· ${hidden} masqué${hidden > 1 ? 's' : ''} (licence non commerciale ou inconnue)`));
     const errors = [...this.perSource.entries()].filter(([, v]) => v.error);
-    for (const [id, v] of errors) {
-      const s = this.store.sources.find((x) => x.id === id);
-      this.info.append(h('div', { class: 'warn' }, `${s?.label ?? id} : ${v.error}`));
+    if (errors.length) {
+      const names = errors.map(([id]) => this.store.sources.find((x) => x.id === id)?.label ?? id).join(', ');
+      this.info.append(h('span', { class: 'warn', title: errors.map(([, v]) => v.error).join('\n') }, `· ${names} indisponible${errors.length > 1 ? 's' : ''} pour le moment`));
     }
   }
 
@@ -219,18 +213,21 @@ export class OnlineView {
     this.empty.hidden = this.results.length > 0;
     if (this.results.length) return;
     if (!this.userQuery) {
+      const missing = this.enabledSources().filter((s) => !s.configured);
       this.empty.append(
-        h('div', { class: 'empty-icon' }, '🌐'),
+        h('div', { class: 'empty-icon' }, icon('globe', { size: 26 })),
         h('h3', {}, 'Trouve de nouveaux sons'),
-        h('p', {}, `Tape 1 à 3 mots-clés et Entrée. Sources actives : ${this.enabledSources().map((s) => s.label).join(', ')}.`),
-        this.enabledSources().some((s) => !s.configured)
-          ? h('p', {}, h('button', { class: 'link', type: 'button', onclick: () => settingsDialog(this.ctx) }, 'Ajoute tes clés gratuites Freesound et Jamendo'), ' pour avoir beaucoup plus de résultats.')
+        h('p', {}, `Tape 1 à 3 mots-clés puis Entrée. On cherche dans : ${this.enabledSources().filter((s) => s.configured).map((s) => s.label).join(', ')}.`),
+        missing.length
+          ? h('p', { class: 'muted' }, `Ajoute ta clé gratuite ${missing.map((s) => s.label).join(' et ')} pour beaucoup plus de résultats. `,
+            h('button', { class: 'link', type: 'button', onclick: () => settingsDialog(this.ctx) }, 'Ouvrir les réglages'))
           : null);
     } else if (loading) {
-      this.empty.append(h('div', { class: 'loading' }, h('span', { class: 'spinner' }), ' Recherche en cours…'));
+      this.empty.append(h('div', { class: 'loading' }, h('span', { class: 'spinner' }), 'Recherche en cours…'));
     } else {
-      this.empty.append(h('div', { class: 'empty-icon' }, '🔎'), h('h3', {}, `Aucun résultat pour « ${this.userQuery} »`),
-        h('p', {}, 'Essaie un mot plus simple ou en anglais (ex. « door » plutôt que « porte de grange »).'));
+      this.empty.append(h('div', { class: 'empty-icon' }, icon('search', { size: 26 })), h('h3', {}, `Aucun résultat pour « ${this.userQuery} »`),
+        h('p', {}, 'Essaie un mot plus simple ou en anglais (ex. « door » plutôt que « porte de grange »).'),
+        h('div', { class: 'empty-actions' }, h('button', { class: 'btn', type: 'button', onclick: () => this.ctx.goGenerate() }, icon('sparkles', { size: 16 }), 'Ou génère-le toi-même')));
     }
   }
 
@@ -266,11 +263,11 @@ export class OnlineView {
         if (playing) this.player.toggle();
         else this.playIndex(index);
       },
-    }, playing ? '❚❚' : '▶');
+    }, icon(playing ? 'pause' : 'play', { size: 14 }));
 
     let action;
     if (r.inLibrary) {
-      action = h('button', { class: 'btn btn-sm btn-ok', type: 'button', title: 'Voir dans ma bibliothèque', onclick: (e) => { e.stopPropagation(); this.ctx.showInLibrary(r.inLibrary); } }, '✓ Dans ma biblio');
+      action = h('button', { class: 'in-lib', type: 'button', title: 'Voir dans ma bibliothèque', onclick: (e) => { e.stopPropagation(); this.ctx.showInLibrary(r.inLibrary); } }, icon('check', { size: 14 }), 'Dans ma biblio');
     } else if (dl) {
       const pct = dl.total ? Math.round((dl.received / dl.total) * 100) : null;
       action = h('div', { class: 'dl-progress', title: 'Téléchargement…' },
@@ -280,19 +277,18 @@ export class OnlineView {
       action = h('span', { class: 'muted', title: "La source n'autorise pas le téléchargement" }, 'Écoute seule');
     } else {
       action = h('button', {
-        class: 'btn btn-sm btn-primary', type: 'button', title: 'Ajouter à ma bibliothèque (Entrée). Maj + clic : ajout direct avec les mots-clés proposés.',
+        class: 'btn btn-add', type: 'button', title: 'Ajouter à ma bibliothèque (Entrée). Maj + clic : ajout direct avec les mots-clés proposés.',
         onclick: (e) => { e.stopPropagation(); this.add(r, { quick: e.shiftKey }); },
-      }, '+ Ajouter');
+      }, icon('plus', { size: 14 }), 'Ajouter');
     }
 
-    const meta = [r.author ? `par ${r.author}` : null, r.tags.slice(0, 5).join(', ')].filter(Boolean).join(' · ');
+    const meta = [r.author ? `par ${r.author}` : null, r.tags.slice(0, 4).join(', ')].filter(Boolean).join(' · ');
     row.append(
       playBtn,
-      h('div', { class: 'row-main' }, h('div', { class: 'row-name' }, r.title), h('div', { class: 'row-meta' }, meta)),
+      h('div', { class: 'row-main' }, h('div', { class: 'row-name' }, r.title), h('div', { class: 'row-meta' }, h('span', { class: 'text' }, meta))),
       h('div', { class: 'row-dur' }, formatDurationShort(r.duration)),
-      h('div', { class: 'row-src' }, sourceBadge(r)),
-      h('div', { class: 'row-lic' }, licenseBadge(r.license)),
-      h('div', { class: 'row-actions row-actions-online' }, action),
+      provenance(r, r.license),
+      h('div', { class: 'row-actions-online row-actions' }, action),
     );
     row.addEventListener('click', () => this.setCursor(index));
     row.addEventListener('dblclick', () => this.playIndex(index));
@@ -360,9 +356,9 @@ export class OnlineView {
   }
 
   playerActions(r) {
-    if (r.inLibrary) return [h('span', { class: 'ok-text' }, '✓ Dans ma biblio')];
+    if (r.inLibrary) return [h('span', { class: 'in-lib' }, icon('check', { size: 14 }), 'Dans ma biblio')];
     if (r.downloadable === false) return [];
-    return [h('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: (e) => this.add(r, { quick: e.shiftKey }) }, '+ Ajouter')];
+    return [h('button', { class: 'btn btn-sm btn-primary', type: 'button', onclick: (e) => this.add(r, { quick: e.shiftKey }) }, icon('plus', { size: 14 }), 'Ajouter')];
   }
 
   /** Remplace un résultat (après résolution) dans toutes les listes. */

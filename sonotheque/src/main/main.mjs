@@ -8,11 +8,15 @@ import { fileURLToPath } from 'node:url';
 
 import { setFetch } from './http.mjs';
 import { createSettingsStore } from './settings.mjs';
-import { createLibrary } from './library.mjs';
+import { createLibrary, safeFileName, uniquePath } from './library.mjs';
 import { analyzeFiles, importEntries } from './importer.mjs';
 import { downloadToLibrary } from './downloader.mjs';
 import { SOURCES, getSource, describeSources } from './sources/index.mjs';
 import { connectFreesound, getFreesoundAccessToken } from './freesound-auth.mjs';
+import { createSynth, USER_RECIPES_DIR, BUILTIN_DIR } from './synth.mjs';
+import { readAudioInfo, quickHash } from './media-info.mjs';
+import { describeLicense } from '../shared/licenses.mjs';
+import { encodePeaks } from '../shared/peaks.mjs';
 import { cleanKeywords } from '../shared/keywords.mjs';
 import { MEDIA_KINDS } from '../shared/media-kinds.mjs';
 
@@ -35,6 +39,7 @@ let mainWindow = null;
 let settings;
 let library;
 let unsubscribeLibrary = null;
+let synth;
 // Résultats de recherche en ligne gardés côté principal : l'interface ne demande un
 // téléchargement que par identifiant, jamais avec une URL arbitraire.
 const resultCache = new Map();
@@ -174,6 +179,7 @@ function createWindow() {
   });
   mainWindow.on('closed', () => {
     mainWindow = null;
+    synth?.dispose(); // la fenêtre invisible de synthèse ne doit pas garder l'appli ouverte
   });
 }
 
@@ -364,6 +370,76 @@ function registerIpc() {
     return { settings: settings.publicView() };
   });
 
+  // --- Génération par le code (recettes) -------------------------------------
+  const recipesDir = () => path.join(library.root, USER_RECIPES_DIR);
+  // Le premier argument d'ipcMain.handle est l'événement : on le saute.
+  const safely = (fn) => async (_event, ...args) => {
+    try {
+      return await fn(...args);
+    } catch (err) {
+      return { error: err.message };
+    }
+  };
+
+  ipcMain.handle('gen:recipes', safely(async () => ({ recipes: await synth.describe(recipesDir()) })));
+
+  ipcMain.handle('gen:render', safely(({ key, values, seed }) =>
+    synth.render(recipesDir(), String(key), values ?? {}, Number(seed) >>> 0)));
+
+  ipcMain.handle('gen:test', safely((code) => synth.test(String(code))));
+
+  ipcMain.handle('gen:saveRecipe', safely(async ({ name, code }) => {
+    await synth.test(String(code)); // on n'enregistre qu'une recette qui marche
+    return { key: synth.saveRecipe(recipesDir(), String(name ?? ''), String(code)) };
+  }));
+
+  ipcMain.handle('gen:openRecipes', () => {
+    fs.mkdirSync(recipesDir(), { recursive: true });
+    return shell.openPath(recipesDir());
+  });
+
+  ipcMain.handle('gen:prompt', () => {
+    const template = fs.readFileSync(path.join(__dirname, '..', 'synth', 'consigne-ia.txt'), 'utf8');
+    const example = fs.readFileSync(path.join(BUILTIN_DIR, 'whoosh.recette'), 'utf8');
+    return template.replace('{EXEMPLE}', example.trim());
+  });
+
+  ipcMain.handle('gen:save', safely(async ({ renderId, name, keywords, category }) => {
+    const r = synth.getRender(String(renderId));
+    if (!r) throw new Error('Son expiré : relance le rendu.');
+    const cat = MEDIA_KINDS.audio.categories[category] ? category : r.meta.category;
+    const dir = library.folderFor('audio', cat);
+    const title = String(name ?? '').slice(0, 200).trim() || r.meta.name;
+    const dest = uniquePath(dir, safeFileName(title), 'wav');
+    fs.writeFileSync(dest, Buffer.from(r.wav));
+    const info = await readAudioInfo(dest);
+    const kws = cleanKeywords(keywords);
+    return {
+      item: library.add({
+        kind: 'audio',
+        category: cat,
+        name: title,
+        file: library.storedPath(dest),
+        ext: 'wav',
+        size: fs.statSync(dest).size,
+        duration: info.duration,
+        sampleRate: info.sampleRate,
+        channels: info.channels,
+        keywords: kws,
+        tags: r.meta.keywords.filter((k) => !kws.includes(k)),
+        hash: await quickHash(dest),
+        peaks: encodePeaks(r.peaks),
+        source: {
+          provider: 'generated',
+          providerLabel: 'Généré',
+          title: r.meta.name,
+          recipe: { key: r.key, name: r.meta.name, values: r.values, seed: r.seed },
+          license: describeLicense('generated'),
+        },
+      }),
+    };
+  }));
+
   // --- Divers ---------------------------------------------------------------
   ipcMain.handle('shell:open', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\//.test(url)) return shell.openExternal(url);
@@ -400,6 +476,7 @@ app.whenReady().then(() => {
     crypto,
   });
   openLibrary(settings.get().libraryPath);
+  synth = createSynth();
 
   protocol.handle(SCHEME, serveLibraryFile);
   if (app.isPackaged) Menu.setApplicationMenu(null);
@@ -417,7 +494,10 @@ app.whenReady().then(() => {
   });
 });
 
-app.on('before-quit', () => library?.flush());
+app.on('before-quit', () => {
+  library?.flush();
+  synth?.dispose();
+});
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();
 });

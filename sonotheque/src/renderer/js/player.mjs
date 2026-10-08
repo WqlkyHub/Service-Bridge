@@ -2,9 +2,10 @@
 
 import { h, clear, formatDuration, Emitter } from './dom.mjs';
 import { drawPeaks, decodePeaks } from './waveform.mjs';
+import { icon } from './icons.mjs';
 
 export class Player extends Emitter {
-  constructor(root, { volume = 0.8, onVolume } = {}) {
+  constructor(root, { volume = 0.8, onVolume, autoplay = true, onAutoplay } = {}) {
     super();
     this.audio = new Audio();
     this.audio.preload = 'auto';
@@ -18,7 +19,16 @@ export class Player extends Emitter {
     this.sub = h('div', { class: 'pl-sub' }, 'Clique sur ▶ ou utilise les flèches ↑ ↓ pour écouter.');
     this.canvas = h('canvas', { class: 'pl-wave', title: 'Clique pour te déplacer dans le son' });
     this.time = h('div', { class: 'pl-time' }, '0:00 / 0:00');
-    this.loopBtn = h('button', { class: 'pl-icon', title: 'Lecture en boucle', 'aria-pressed': 'false', onclick: () => this.setLoop(!this.audio.loop) }, '🔁');
+    this.loopBtn = h('button', { class: 'icon-btn', title: 'Lecture en boucle (L)', 'aria-pressed': 'false', onclick: () => this.setLoop(!this.audio.loop) }, icon('loop', { size: 18 }));
+    this.autoBtn = h('button', {
+      class: ['icon-btn', autoplay && 'active'], title: 'Écoute auto : joue le son dès que tu le sélectionnes avec ↑ ↓', 'aria-pressed': String(autoplay),
+      onclick: () => {
+        const on = !this.autoBtn.classList.contains('active');
+        this.autoBtn.classList.toggle('active', on);
+        this.autoBtn.setAttribute('aria-pressed', String(on));
+        onAutoplay?.(on);
+      },
+    }, icon('autoplay', { size: 18 }));
     this.vol = h('input', {
       class: 'pl-volume', type: 'range', min: '0', max: '1', step: '0.01', value: String(volume), title: 'Volume',
       oninput: () => {
@@ -33,8 +43,8 @@ export class Player extends Emitter {
       h('div', { class: 'pl-info' }, this.title, this.sub),
       h('div', { class: 'pl-wave-wrap' }, this.canvas),
       this.time,
-      this.loopBtn,
-      h('label', { class: 'pl-vol-wrap' }, h('span', { 'aria-hidden': 'true' }, '🔊'), this.vol),
+      h('div', { class: 'pl-controls' }, this.loopBtn, this.autoBtn),
+      h('label', { class: 'pl-vol-wrap' }, icon('volume', { size: 18 }), this.vol),
       this.actions,
     );
     this.renderButton();
@@ -147,7 +157,7 @@ export class Player extends Emitter {
   }
 
   renderButton() {
-    this.btn.textContent = this.playing ? '❚❚' : '▶';
+    this.btn.replaceChildren(icon(this.playing ? 'pause' : 'play', { size: 20 }));
     this.btn.setAttribute('aria-label', this.playing ? 'Pause' : 'Lecture');
     this.btn.disabled = !this.entry;
   }

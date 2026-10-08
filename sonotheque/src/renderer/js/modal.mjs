@@ -2,6 +2,7 @@
 
 import { h } from './dom.mjs';
 import { hideTooltip } from './tooltip.mjs';
+import { icon } from './icons.mjs';
 
 let openCount = 0;
 
@@ -40,7 +41,7 @@ export function openModal({ title, body, actions = [], size = '', onClose } = {}
   const dialog = h('div', { class: ['modal', size && `modal-${size}`], role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
     h('div', { class: 'modal-head' },
       h('h2', {}, title),
-      h('button', { class: 'modal-close', type: 'button', 'aria-label': 'Fermer', onclick: () => close() }, '×')),
+      h('button', { class: 'modal-close icon-btn', type: 'button', 'aria-label': 'Fermer', onclick: () => close() }, icon('close', { size: 18 }))),
     h('div', { class: 'modal-body' }, body),
     buttons.length ? h('div', { class: 'modal-foot' }, buttons) : null,
   );

@@ -6,6 +6,7 @@
 - **Mots-clés par IA (option)** : analyser un son pour proposer des mots-clés quand le nom du fichier n'en contient aucun (`AUDIO_0012.wav`).
 - **Collections / projets** : regrouper les sons d'un montage, puis exporter les crédits du projet en un clic.
 - **Découpe rapide** : choisir un passage sur la forme d'onde et ne glisser que ce morceau dans la timeline.
+- **Génération : plus de recettes** (tonnerre, pas, feu de camp, foule…) et la possibilité de superposer plusieurs recettes.
 - **Recherche par similarité** : « des sons qui ressemblent à celui-ci » (l'API Freesound le permet déjà).
 
 ## Effets visuels : ce qui est déjà prêt

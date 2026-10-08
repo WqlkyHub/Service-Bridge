@@ -1,0 +1,33 @@
+// Coup « cinéma » : grave qui tombe + éclat de bruit + réverbération.
+recipe({
+  name: 'Impact cinéma',
+  description: 'Gros coup grave pour un titre, une coupe, un moment fort.',
+  category: 'sfx',
+  keywords: ['impact', 'boom', 'cinématique'],
+  params: {
+    duration: { label: 'Durée', min: 0.5, max: 6, default: 2.5, step: 0.1, unit: 's' },
+    weight: { label: 'Poids (grave)', min: 30, max: 120, default: 50, step: 1, unit: 'Hz' },
+    brightness: { label: 'Éclat', min: 0, max: 1, default: 0.5, step: 0.01 },
+    space: { label: 'Réverbération', min: 0, max: 1, default: 0.4, step: 0.01 },
+  },
+  render({ p, osc, noise, filter, gain, shaper, reverb, env, chain, play, out, duration }) {
+    const send = gain(p.space * 0.7);
+    chain(send, reverb(duration * 0.9, 2.5), out);
+
+    const sub = osc('sine', 150);
+    const subGain = gain(0);
+    chain(sub, shaper(8), subGain, out);
+    subGain.connect(send);
+    env(sub.frequency, [[0, 160], [0.15, p.weight], [duration, p.weight * 0.8]], 'exp');
+    env(subGain.gain, [[0, 0.0001], [0.006, 1], [duration * 0.85, 0.0001]], 'exp');
+    play(sub, 0, duration);
+
+    const n = noise('white');
+    const lp = filter('lowpass', 600 + p.brightness * 9000, 0.7);
+    const ng = gain(0);
+    chain(n, lp, ng, out);
+    ng.connect(send);
+    env(ng.gain, [[0, 0.0001], [0.003, 0.9], [0.08 + p.brightness * 0.3, 0.0001]], 'exp');
+    play(n, 0, 0.5);
+  },
+});

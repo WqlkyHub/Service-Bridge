@@ -1,20 +1,11 @@
 // Formes d'onde : calcul (une seule fois par son, mémorisé dans la bibliothèque) et dessin.
 
 import { isPlayable } from '../../shared/media-kinds.mjs';
+import { encodePeaks, decodePeaks } from '../../shared/peaks.mjs';
 
 export const PEAK_COUNT = 100;
-const ALPHABET = '0123456789abcdefghijklmnopqrstuvwxyz';
 const MAX_DECODE_BYTES = 80 * 1024 * 1024;
-
-/** Encode 100 valeurs 0..1 en une courte chaîne (36 niveaux) pour l'index JSON. */
-export function encodePeaks(peaks) {
-  return peaks.map((p) => ALPHABET[Math.max(0, Math.min(35, Math.round(p * 35)))]).join('');
-}
-
-export function decodePeaks(str) {
-  if (!str) return null;
-  return [...str].map((c) => Math.max(0, ALPHABET.indexOf(c)) / 35);
-}
+export { encodePeaks, decodePeaks };
 
 /** Calcule les pics d'un fichier audio (ArrayBuffer). */
 export async function computePeaks(arrayBuffer, count = PEAK_COUNT) {

@@ -1,0 +1,21 @@
+// Sub drop : grave qui plonge, pour marquer un changement de scène.
+recipe({
+  name: 'Sub drop',
+  description: 'Grave qui plonge, très efficace sur une coupe.',
+  category: 'sfx',
+  keywords: ['sub', 'drop', 'grave'],
+  params: {
+    duration: { label: 'Durée', min: 1, max: 6, default: 2.5, step: 0.1, unit: 's' },
+    start: { label: 'Départ', min: 60, max: 200, default: 120, step: 1, unit: 'Hz' },
+    end: { label: 'Arrivée', min: 20, max: 50, default: 28, step: 1, unit: 'Hz' },
+    drive: { label: 'Saturation', min: 0, max: 60, default: 15, step: 1 },
+  },
+  render({ p, osc, gain, shaper, filter, env, chain, play, out, duration }) {
+    const o = osc('sine', p.start);
+    const g = gain(0);
+    chain(o, shaper(p.drive), filter('lowpass', 400, 0.7), g, out);
+    env(o.frequency, [[0, p.start], [duration * 0.7, p.end]], 'exp');
+    env(g.gain, [[0, 0.0001], [0.01, 1], [duration, 0.0001]], 'exp');
+    play(o, 0, duration);
+  },
+});

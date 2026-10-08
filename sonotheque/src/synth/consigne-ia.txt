@@ -1,0 +1,41 @@
+Tu vas m'écrire une « recette » de son pour mon logiciel Sonothèque. Une recette est un petit programme JavaScript qui fabrique un effet sonore avec la Web Audio API (rendu hors ligne, OfflineAudioContext, 44,1 kHz, stéréo).
+
+LE SON QUE JE VEUX : [décris ici ton son, ex. « une porte de vaisseau spatial qui s'ouvre avec un sifflement d'air »]
+
+RÈGLES DU FORMAT (obligatoires)
+- Le fichier contient UN SEUL appel : recipe({ ... });  Pas d'import, pas d'export, pas de fetch, pas de DOM.
+- Champs :
+  name: nom court en français
+  description: une phrase en français
+  category: 'sfx' | 'ambiance' | 'musique' | 'voix' | 'autre'
+  keywords: 1 à 3 mots-clés en français
+  params: les réglages proposés à l'utilisateur. Chaque réglage est soit
+    un curseur  { label: 'Hauteur', min: 200, max: 4000, default: 1200, step: 10, unit: 'Hz' }
+    soit un choix { label: 'Style', options: [{ value: 'a', label: 'Doux' }, { value: 'b', label: 'Fort' }], default: 'a' }
+    Si un réglage s'appelle « duration », il fixe la durée du son en secondes.
+  duration: (facultatif, si pas de réglage « duration ») un nombre de secondes ou une fonction (p) => secondes
+  tail: (facultatif) secondes ajoutées à la fin pour laisser résonner la réverbération
+  render(api): fonction qui construit le son (peut être async). Rien à renvoyer.
+- Tout doit être connecté, directement ou non, à api.out. Le volume final est normalisé automatiquement : pas besoin de régler le niveau global.
+- Pour l'aléatoire, utilise UNIQUEMENT api.rand / api.randInt / api.pick (jamais Math.random) : chaque « variante » doit être reproductible.
+- Reste raisonnable : quelques centaines de nœuds maximum, durée ≤ 60 s.
+
+L'OBJET api CONTIENT
+  ctx            l'OfflineAudioContext (Web Audio standard : createBuffer, createBufferSource, createOscillator…)
+  out            nœud de sortie (connecte-toi dessus)
+  p              valeurs actuelles des réglages, ex. p.duration, p.pitch
+  duration       durée du son (s) ; total = duration + tail
+  sampleRate     44100
+  rand(min=0, max=1), randInt(min, max), pick(tableau)
+  noise(kind)    source de bruit en boucle, kind = 'white' | 'pink' (doux) | 'brown' (grave) — pas encore démarrée
+  osc(type, freq)          oscillateur 'sine' | 'square' | 'sawtooth' | 'triangle' — pas encore démarré
+  filter(type, freq, q)    BiquadFilter ('lowpass', 'highpass', 'bandpass', 'notch', 'peaking'…)
+  gain(valeur), pan(-1..1), shaper(0..100) (distorsion douce), reverb(secondes, decay)
+  env(audioParam, [[t, v], [t, v], …], 'linear' | 'exp')   automatisation (en 'exp', les valeurs doivent être > 0, utilise 0.0001 pour « silence »)
+  chain(a, b, c, …)        connecte les nœuds à la suite et renvoie le dernier (le dernier peut être un AudioParam)
+  play(source, debut, fin) démarre et arrête une source (fin par défaut = fin du son)
+
+EXEMPLE COMPLET (un whoosh) :
+{EXEMPLE}
+
+Réponds UNIQUEMENT avec le code de la recette, sans explication autour.

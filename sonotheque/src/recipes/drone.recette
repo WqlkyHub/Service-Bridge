@@ -1,0 +1,31 @@
+// Nappe sombre : oscillateurs désaccordés filtrés qui respirent lentement.
+recipe({
+  name: 'Nappe sombre',
+  description: 'Fond grave et inquiétant pour le suspense ou le mystère.',
+  category: 'ambiance',
+  keywords: ['nappe', 'sombre', 'suspense'],
+  params: {
+    duration: { label: 'Durée', min: 10, max: 60, default: 20, step: 1, unit: 's' },
+    pitch: { label: 'Note de base', min: 40, max: 120, default: 55, step: 1, unit: 'Hz' },
+    darkness: { label: 'Obscurité', min: 0, max: 1, default: 0.6, step: 0.01 },
+  },
+  render({ p, osc, noise, filter, gain, pan, env, chain, play, out, duration, rand }) {
+    const master = gain(0);
+    const cutoff = 200 + (1 - p.darkness) * 1500;
+    const lp = filter('lowpass', cutoff, 1.5);
+    chain(lp, master, out);
+    env(master.gain, [[0, 0], [3, 0.8], [duration - 3, 0.8], [duration, 0]]);
+    const lfo = osc('sine', rand(0.05, 0.12));
+    chain(lfo, gain(cutoff * 0.5), lp.frequency);
+    play(lfo, 0, duration);
+
+    for (const [ratio, side] of [[1, 0], [1.006, -0.6], [1.498, 0.6], [0.5, 0]]) {
+      const o = osc('sawtooth', p.pitch * ratio);
+      chain(o, gain(0.25), pan(side), lp);
+      play(o, 0, duration);
+    }
+    const n = noise('brown');
+    chain(n, filter('lowpass', 300, 0.7), gain(0.3), master);
+    play(n, 0, duration);
+  },
+});

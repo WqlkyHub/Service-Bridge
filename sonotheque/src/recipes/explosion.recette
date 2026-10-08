@@ -1,0 +1,45 @@
+// Explosion : souffle grave, coup de sub et débris aléatoires.
+recipe({
+  name: 'Explosion',
+  description: 'Explosion avec souffle grave et débris.',
+  category: 'sfx',
+  keywords: ['explosion', 'boom', 'action'],
+  params: {
+    duration: { label: 'Durée', min: 1, max: 8, default: 3.5, step: 0.1, unit: 's' },
+    size: { label: 'Taille', min: 0, max: 1, default: 0.6, step: 0.01 },
+    debris: { label: 'Débris', min: 0, max: 1, default: 0.5, step: 0.01 },
+  },
+  render({ p, osc, noise, filter, gain, shaper, reverb, pan, env, chain, play, out, duration, rand }) {
+    const bus = gain(1);
+    const send = gain(0.35 + p.size * 0.3);
+    chain(bus, shaper(25), out);
+    bus.connect(send);
+    chain(send, reverb(duration, 2), out);
+
+    const body = noise('brown');
+    const lp = filter('lowpass', 3000, 0.6);
+    const bg = gain(0);
+    chain(body, lp, bg, bus);
+    env(lp.frequency, [[0, 2500 + p.size * 3000], [duration, 120]], 'exp');
+    env(bg.gain, [[0, 0.0001], [0.008, 1], [duration, 0.0001]], 'exp');
+    play(body, 0, duration);
+
+    const sub = osc('sine', 70);
+    const sg = gain(0);
+    chain(sub, sg, bus);
+    env(sub.frequency, [[0, 80], [0.6 + p.size, 25]], 'exp');
+    env(sg.gain, [[0, 0.0001], [0.005, 1], [0.8 + p.size * 1.2, 0.0001]], 'exp');
+    play(sub, 0, duration);
+
+    const count = Math.round(p.debris * 40);
+    for (let i = 0; i < count; i++) {
+      const t = rand(0.05, duration * 0.7);
+      const d = noise('white');
+      const hp = filter('bandpass', rand(1500, 7000), rand(1, 6));
+      const g = gain(0);
+      chain(d, hp, g, pan(rand(-0.9, 0.9)), out);
+      env(g.gain, [[t, 0.0001], [t + 0.002, rand(0.1, 0.5) * (1 - t / duration)], [t + rand(0.02, 0.12), 0.0001]], 'exp');
+      play(d, t, t + 0.15);
+    }
+  },
+});

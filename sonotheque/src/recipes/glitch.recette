@@ -1,0 +1,27 @@
+// Glitch numérique : fragments aléatoires de tonalités et de bruit, hachés.
+recipe({
+  name: 'Glitch',
+  description: 'Bug numérique, interférence, effet « hack ».',
+  category: 'sfx',
+  keywords: ['glitch', 'numérique', 'bug'],
+  params: {
+    duration: { label: 'Durée', min: 0.3, max: 4, default: 1.2, step: 0.05, unit: 's' },
+    density: { label: 'Densité', min: 0, max: 1, default: 0.5, step: 0.01 },
+    brightness: { label: 'Brillance', min: 0, max: 1, default: 0.6, step: 0.01 },
+  },
+  render({ p, osc, noise, filter, gain, shaper, pan, env, chain, play, out, duration, rand, pick }) {
+    const bus = gain(0.8);
+    chain(bus, shaper(60), filter('lowpass', 2000 + p.brightness * 14000, 0.7), out);
+    const count = Math.round(duration * (12 + p.density * 60));
+    for (let i = 0; i < count; i++) {
+      const t = rand(0, duration - 0.05);
+      const len = rand(0.008, 0.08);
+      const src = rand() < 0.6 ? osc(pick(['square', 'sawtooth']), rand(60, 3000)) : noise('white');
+      const g = gain(0);
+      chain(src, g, pan(rand(-1, 1)), bus);
+      const lvl = rand(0.2, 0.7);
+      env(g.gain, [[t, 0], [t + 0.001, lvl], [t + len, lvl], [t + len + 0.001, 0]]);
+      play(src, t, t + len + 0.01);
+    }
+  },
+});

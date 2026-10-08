@@ -1,0 +1,28 @@
+// Battement de cœur (« boum-boum ») au tempo choisi.
+recipe({
+  name: 'Battement de cœur',
+  description: 'Cœur qui bat, pour la tension ou le suspense.',
+  category: 'sfx',
+  keywords: ['cœur', 'battement', 'tension'],
+  params: {
+    duration: { label: 'Durée', min: 2, max: 30, default: 6, step: 0.5, unit: 's' },
+    bpm: { label: 'Tempo', min: 40, max: 180, default: 70, step: 1, unit: 'bpm' },
+    depth: { label: 'Grave', min: 35, max: 90, default: 55, step: 1, unit: 'Hz' },
+  },
+  render({ p, osc, gain, filter, env, chain, play, out, duration }) {
+    const lp = filter('lowpass', 220, 0.7);
+    chain(lp, out);
+    const period = 60 / p.bpm;
+    for (let t = 0.05; t < duration - 0.3; t += period) {
+      for (const [offset, level, f] of [[0, 1, p.depth], [0.26, 0.7, p.depth * 1.15]]) {
+        const s = t + offset;
+        const o = osc('sine', f * 1.6);
+        const g = gain(0);
+        chain(o, g, lp);
+        env(o.frequency, [[s, f * 1.6], [s + 0.12, f]], 'exp');
+        env(g.gain, [[s, 0.0001], [s + 0.012, level], [s + 0.2, 0.0001]], 'exp');
+        play(o, s, s + 0.25);
+      }
+    }
+  },
+});

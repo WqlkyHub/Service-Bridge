@@ -1,0 +1,41 @@
+// Pluie : nappe de bruit + milliers de gouttes écrites directement dans un buffer.
+recipe({
+  name: 'Pluie',
+  description: 'Pluie fine à averse, en stéréo.',
+  category: 'ambiance',
+  keywords: ['pluie', 'ambiance', 'nature'],
+  params: {
+    duration: { label: 'Durée', min: 5, max: 60, default: 15, step: 1, unit: 's' },
+    intensity: { label: 'Intensité', min: 0, max: 1, default: 0.6, step: 0.01 },
+    drops: { label: 'Gouttes', min: 0, max: 1, default: 0.5, step: 0.01 },
+  },
+  render({ ctx, p, noise, filter, gain, env, chain, play, out, duration, rand, sampleRate }) {
+    const master = gain(0);
+    chain(master, out);
+    env(master.gain, [[0, 0], [1, 1], [duration - 1, 1], [duration, 0]]);
+
+    const bed = noise('pink');
+    chain(bed, filter('highpass', 500, 0.5), filter('lowpass', 4000 + p.intensity * 6000, 0.5), gain(0.25 + p.intensity * 0.5), master);
+    play(bed, 0, duration);
+
+    const len = Math.ceil(duration * sampleRate);
+    const buf = ctx.createBuffer(2, len, sampleRate);
+    const count = Math.round(duration * (30 + p.drops * 400));
+    for (let ch = 0; ch < 2; ch++) {
+      const d = buf.getChannelData(ch);
+      for (let i = 0; i < count / 2; i++) {
+        const start = Math.floor(rand(0, len - 2000));
+        const f = rand(1800, 6500);
+        const amp = rand(0.05, 0.35);
+        const decay = rand(150, 600);
+        for (let k = 0; k < 1500; k++) {
+          d[start + k] += Math.sin((2 * Math.PI * f * k) / sampleRate) * amp * Math.exp(-k / decay);
+        }
+      }
+    }
+    const src = ctx.createBufferSource();
+    src.buffer = buf;
+    chain(src, filter('highpass', 1200, 0.7), gain(0.5), master);
+    play(src, 0, duration);
+  },
+});

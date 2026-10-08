@@ -4,13 +4,6 @@ import { h, formatDuration, formatSize, formatDate, hostOf } from './dom.mjs';
 import { LEVEL_INFO } from '../../shared/licenses.mjs';
 import { MEDIA_KINDS } from '../../shared/media-kinds.mjs';
 
-const SOURCE_COLORS = {
-  freesound: 'src-freesound',
-  openverse: 'src-openverse',
-  jamendo: 'src-jamendo',
-  archive: 'src-archive',
-  local: 'src-local',
-};
 
 /** Nom complet de la source, ex. « Openverse › Freesound ». */
 export function sourceName(src) {
@@ -19,7 +12,19 @@ export function sourceName(src) {
 }
 
 export function sourceBadge(src) {
-  return h('span', { class: ['badge', 'badge-source', SOURCE_COLORS[src?.provider] ?? ''] }, sourceName(src));
+  return h('span', { class: ['badge', 'badge-source'] }, sourceName(src));
+}
+
+/** Provenance compacte sur deux lignes : la source, puis la licence. */
+export function provenance(src, license = src?.license) {
+  return h('div', { class: 'prov' },
+    h('span', { class: 'prov-src' }, sourceName(src)),
+    licenseBadge(license));
+}
+
+/** Pastille de couleur de la catégorie + son nom. */
+export function categoryTag(category) {
+  return h('span', { class: 'cat' }, h('span', { class: ['dot', `dot-${category}`] }), categoryLabel(category));
 }
 
 export function licenseBadge(license) {
@@ -30,7 +35,7 @@ export function licenseBadge(license) {
 
 export function categoryLabel(category) {
   const c = MEDIA_KINDS.audio.categories[category];
-  return c ? `${c.icon} ${c.label}` : category;
+  return c ? c.label : category;
 }
 
 function row(label, value) {
@@ -50,7 +55,8 @@ export function sourceCard({ title, source, duration, size, quality, note, added
     h('div', { class: 'tip-title' }, title),
     h('div', { class: 'tip-badges' }, sourceBadge(source), licenseBadge(lic)),
     h('div', { class: ['tip-license', `lic-text-${info.color}`] }, info.help),
-    row('Source', isLocal ? 'Importé depuis ton ordinateur' : sourceName(source)),
+    row('Source', isLocal ? 'Importé depuis ton ordinateur'
+      : source?.provider === 'generated' ? `Généré par la Sonothèque (recette « ${source.recipe?.name ?? source.title} »)` : sourceName(source)),
     row('Auteur', source?.author),
     row("Page d'origine", source?.pageUrl ? `${hostOf(source.pageUrl)} — ${source.pageUrl}` : null),
     row('Fichier d\'origine', isLocal ? source?.originalPath : null),

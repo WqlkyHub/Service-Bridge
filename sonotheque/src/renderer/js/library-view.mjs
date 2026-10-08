@@ -2,7 +2,8 @@
 
 import { h, clear, formatDurationShort, debounce } from './dom.mjs';
 import { VirtualList } from './virtual-list.mjs';
-import { sourceBadge, licenseBadge, sourceCard, categoryLabel } from './badges.mjs';
+import { provenance, sourceCard, categoryLabel, categoryTag } from './badges.mjs';
+import { icon } from './icons.mjs';
 import { attachTooltip, hideTooltip } from './tooltip.mjs';
 import { drawPeaks, decodePeaks, queuePeaks } from './waveform.mjs';
 import { editDialog, creditFor } from './dialogs.mjs';
@@ -12,7 +13,7 @@ import { searchLibrary, indexItem } from '../../shared/search.mjs';
 import { MEDIA_KINDS, isPlayable } from '../../shared/media-kinds.mjs';
 
 const sono = window.sono;
-const ROW_HEIGHT = 58;
+const ROW_HEIGHT = 60;
 
 export class LibraryView {
   constructor(root, ctx) {
@@ -46,7 +47,7 @@ export class LibraryView {
 
   build(root) {
     this.search = h('input', {
-      class: 'search', type: 'search', placeholder: 'Rechercher dans ma bibliothèque : pluie, porte, whoosh…',
+      class: 'search', type: 'text', placeholder: 'Rechercher dans ma bibliothèque : pluie, porte, whoosh…',
       'aria-label': 'Rechercher dans ma bibliothèque', spellcheck: false,
     });
     const runSearch = debounce(() => {
@@ -71,8 +72,8 @@ export class LibraryView {
     });
 
     this.catChips = h('div', { class: 'cat-chips' });
-    this.favBtn = h('button', { class: 'chip', type: 'button', title: 'Afficher seulement mes favoris', onclick: () => { this.favoritesOnly = !this.favoritesOnly; this.update(); } }, '★ Favoris');
-    this.sortSel = h('select', { class: 'select select-sm', 'aria-label': 'Trier', onchange: () => { this.sort = this.sortSel.value; this.update(); } },
+    this.favBtn = h('button', { class: 'chip', type: 'button', title: 'Afficher seulement mes favoris', onclick: () => { this.favoritesOnly = !this.favoritesOnly; this.update(); } }, icon('star', { size: 14 }), 'Favoris');
+    this.sortSel = h('select', { class: 'select', 'aria-label': 'Trier', onchange: () => { this.sort = this.sortSel.value; this.update(); } },
       h('option', { value: 'relevance' }, 'Pertinence'),
       h('option', { value: 'recent' }, 'Plus récents'),
       h('option', { value: 'name' }, 'Nom A→Z'),
@@ -85,8 +86,8 @@ export class LibraryView {
 
     root.append(
       h('div', { class: 'toolbar' },
-        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon', 'aria-hidden': 'true' }, '⌕'), this.search),
-        h('div', { class: 'filters' }, this.catChips, this.favBtn, h('span', { class: 'spacer' }), this.count, this.sortSel)),
+        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon' }, icon('search', { size: 18 })), this.search),
+        h('div', { class: 'filters' }, this.catChips, h('span', { class: 'sep' }), this.favBtn, h('span', { class: 'spacer' }), this.count, this.sortSel)),
       h('div', { class: 'list-wrap' }, this.listEl, this.empty),
       this.selBar,
     );
@@ -108,12 +109,15 @@ export class LibraryView {
 
   renderCategoryChips() {
     clear(this.catChips);
-    const all = [[null, { label: 'Tout', icon: '' }], ...Object.entries(MEDIA_KINDS.audio.categories)];
+    const counts = {};
+    for (const it of this.store.items.values()) counts[it.category] = (counts[it.category] ?? 0) + 1;
+    const all = [[null, { label: 'Tout' }], ...Object.entries(MEDIA_KINDS.audio.categories)];
     for (const [id, c] of all) {
+      if (id && !counts[id] && this.category !== id) continue; // on n'affiche que les catégories utilisées
       this.catChips.append(h('button', {
         type: 'button', class: ['chip', this.category === id && 'chip-on'],
         onclick: () => { this.category = this.category === id ? null : id; this.update(); },
-      }, `${c.icon} ${c.label}`.trim()));
+      }, id ? h('span', { class: ['dot', `dot-${id}`] }) : null, c.label, id ? h('span', { class: 'n' }, counts[id] ?? 0) : null));
     }
     this.favBtn.classList.toggle('chip-on', this.favoritesOnly);
   }
@@ -153,20 +157,22 @@ export class LibraryView {
     if (this.results.length) return;
     if (!total) {
       this.empty.append(
-        h('div', { class: 'empty-icon' }, '🎧'),
+        h('div', { class: 'empty-icon' }, icon('library', { size: 26 })),
         h('h3', {}, 'Ta bibliothèque est vide'),
-        h('p', {}, 'Glisse des fichiers ou des dossiers audio dans cette fenêtre, ou :'),
+        h('p', {}, 'Glisse des fichiers ou des dossiers audio dans cette fenêtre, ou commence par une de ces options.'),
         h('div', { class: 'empty-actions' },
-          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => this.ctx.importPick('files') }, 'Importer des fichiers'),
-          h('button', { class: 'btn', type: 'button', onclick: () => this.ctx.importPick('folder') }, 'Importer un dossier'),
-          h('button', { class: 'btn', type: 'button', onclick: () => this.ctx.goOnline('') }, '🌐 Chercher des sons en ligne')));
+          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => this.ctx.importPick('files') }, icon('plus', { size: 16 }), 'Importer des fichiers'),
+          h('button', { class: 'btn', type: 'button', onclick: () => this.ctx.importPick('folder') }, icon('folder', { size: 16 }), 'Un dossier'),
+          h('button', { class: 'btn', type: 'button', onclick: () => this.ctx.goOnline('') }, icon('globe', { size: 16 }), 'Chercher en ligne'),
+          h('button', { class: 'btn', type: 'button', onclick: () => this.ctx.goGenerate() }, icon('sparkles', { size: 16 }), 'Générer un son')));
     } else {
       const q = this.query.trim();
       this.empty.append(
-        h('div', { class: 'empty-icon' }, '🔎'),
+        h('div', { class: 'empty-icon' }, icon('search', { size: 26 })),
         h('h3', {}, q ? `Aucun son pour « ${q} »` : 'Aucun son avec ces filtres'),
         this.store.settings.commercialOnly ? h('p', {}, 'Le filtre « Usage commercial » est actif.') : null,
-        q ? h('button', { class: 'btn btn-primary', type: 'button', onclick: () => this.ctx.goOnline(q) }, `🌐 Chercher « ${q} » en ligne`) : null);
+        q ? h('div', { class: 'empty-actions' },
+          h('button', { class: 'btn btn-primary', type: 'button', onclick: () => this.ctx.goOnline(q) }, icon('globe', { size: 16 }), `Chercher « ${q} » en ligne`)) : null);
     }
   }
 
@@ -177,11 +183,11 @@ export class LibraryView {
     if (n < 2) return;
     const items = [...this.selected].map((id) => this.store.items.get(id)).filter(Boolean);
     this.selBar.append(
-      h('span', {}, `${n} sons sélectionnés — glisse-les ensemble dans ta timeline`),
+      h('span', {}, h('b', {}, `${n} sons sélectionnés`), ' · glisse-les ensemble dans ta timeline'),
       h('span', { class: 'spacer' }),
-      h('button', { class: 'btn btn-sm', type: 'button', onclick: () => this.copyCredits(items) }, '📋 Copier les crédits'),
-      h('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => this.removeItems(items) }, 'Supprimer'),
-      h('button', { class: 'btn btn-sm', type: 'button', onclick: () => { this.selected.clear(); this.list.refresh(); this.renderSelBar(); } }, 'Désélectionner'));
+      h('button', { class: 'btn btn-sm', type: 'button', onclick: () => this.copyCredits(items) }, icon('copy', { size: 14 }), 'Copier les crédits'),
+      h('button', { class: 'btn btn-sm btn-danger', type: 'button', onclick: () => this.removeItems(items) }, icon('trash', { size: 14 }), 'Supprimer'),
+      h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => { this.selected.clear(); this.list.refresh(); this.renderSelBar(); } }, 'Désélectionner'));
   }
 
   // --- Lignes ---------------------------------------------------------------
@@ -203,33 +209,32 @@ export class LibraryView {
         if (playing) this.player.toggle();
         else this.playIndex(index);
       },
-    }, playing ? '❚❚' : '▶');
+    }, icon(playing ? 'pause' : 'play', { size: 14 }));
 
     const wave = h('canvas', { class: 'row-wave', 'aria-hidden': 'true' });
     requestAnimationFrame(() => drawPeaks(wave, decodePeaks(item.peaks), { color: getWaveColor(), playedColor: getWaveColor() }));
 
-    const kws = h('div', { class: 'row-kws' }, item.keywords.map((k) => h('button', {
-      class: 'kw', type: 'button', title: `Chercher « ${k} »`,
-      onclick: (e) => { e.stopPropagation(); this.setQuery(k); },
-    }, k)));
+    const meta = h('div', { class: 'row-meta' }, categoryTag(item.category),
+      item.keywords.map((k) => h('button', {
+        class: 'kw', type: 'button', title: `Chercher « ${k} »`,
+        onclick: (e) => { e.stopPropagation(); this.setQuery(k); },
+      }, k)));
 
     const fav = h('button', {
       class: ['icon-btn', item.favorite && 'fav-on'], type: 'button', title: item.favorite ? 'Retirer des favoris (F)' : 'Ajouter aux favoris (F)',
       onclick: (e) => { e.stopPropagation(); sono.library.update(item.id, { favorite: !item.favorite }); },
-    }, item.favorite ? '★' : '☆');
+    }, icon('star', { size: 16, filled: item.favorite }));
 
     row.append(
       playBtn,
       wave,
-      h('div', { class: 'row-main' }, h('div', { class: 'row-name' }, item.name), kws),
-      h('div', { class: 'row-cat' }, categoryLabel(item.category)),
+      h('div', { class: 'row-main' }, h('div', { class: 'row-name' }, item.name), meta),
       h('div', { class: 'row-dur' }, formatDurationShort(item.duration)),
-      h('div', { class: 'row-src' }, sourceBadge(item.source)),
-      h('div', { class: 'row-lic' }, licenseBadge(item.source?.license)),
+      provenance(item.source),
       h('div', { class: 'row-actions' },
         fav,
-        h('button', { class: 'icon-btn', type: 'button', title: 'Modifier (E)', onclick: (e) => { e.stopPropagation(); this.edit(item); } }, '✎'),
-        h('button', { class: 'icon-btn', type: 'button', title: "Afficher dans l'Explorateur", onclick: (e) => { e.stopPropagation(); sono.library.reveal(item.id); } }, '📂')),
+        h('button', { class: 'icon-btn', type: 'button', title: 'Modifier (E)', onclick: (e) => { e.stopPropagation(); this.edit(item); } }, icon('edit', { size: 16 })),
+        h('button', { class: 'icon-btn', type: 'button', title: "Afficher dans l'Explorateur", onclick: (e) => { e.stopPropagation(); sono.library.reveal(item.id); } }, icon('folder', { size: 16 }))),
     );
 
     row.addEventListener('click', (e) => this.onRowClick(e, index));
@@ -248,7 +253,7 @@ export class LibraryView {
       addedAt: item.addedAt,
       file: item.file,
       tags: item.tags,
-      note: 'Glisse la ligne dans Premiere Pro ou DaVinci Resolve pour l\'ajouter au montage.',
+      note: "Glisse la ligne dans Premiere Pro ou DaVinci Resolve pour l'ajouter au montage.",
     }), `lib:${item.id}`);
     return row;
   }
@@ -322,12 +327,12 @@ export class LibraryView {
       key: `lib:${item.id}`,
       url: sono.library.fileUrl(item.id),
       title: item.name,
-      subtitle: [categoryLabel(item.category), item.keywords.join(', '), item.source?.providerLabel].filter(Boolean).join(' · '),
+      subtitle: [categoryLabel(item.category), item.keywords.join(', ')].filter(Boolean).join(' · '),
       peaks: item.peaks,
       duration: item.duration,
       actions: [
-        h('button', { class: 'btn btn-sm', type: 'button', title: "Afficher le fichier dans l'Explorateur", onclick: () => sono.library.reveal(item.id) }, '📂'),
-        credit ? h('button', { class: 'btn btn-sm', type: 'button', title: 'Copier la ligne de crédit', onclick: () => { sono.copy(credit); toast('Crédit copié.', 'ok'); } }, '📋 Crédit') : null,
+        h('button', { class: 'icon-btn', type: 'button', title: "Afficher le fichier dans l'Explorateur", onclick: () => sono.library.reveal(item.id) }, icon('folder', { size: 16 })),
+        credit ? h('button', { class: 'btn btn-sm', type: 'button', title: 'Copier la ligne de crédit', onclick: () => { sono.copy(credit); toast('Crédit copié.', 'ok'); } }, icon('copy', { size: 14 }), 'Crédit') : null,
       ].filter(Boolean),
     };
   }
