@@ -19,28 +19,45 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 
 ## Installer et lancer (Windows)
 
-### Option A : le plus simple
+### Installer l'application
 
-1. Installe **Node.js** (version « LTS ») depuis https://nodejs.org : suivant, suivant, terminer.
-2. Télécharge ce dossier `sonotheque` sur ton PC.
-3. Double-clique sur **`Lancer-Sonotheque.bat`**.
-   - Le premier lancement télécharge ce dont l'appli a besoin (environ 2 minutes, une seule fois).
-   - Les lancements suivants sont immédiats.
-   - Si Windows affiche « Windows a protégé votre ordinateur » : « Informations complémentaires » → « Exécuter quand même ».
-   - **Si la fenêtre ne s'ouvre pas** : double-clique sur **`Diagnostic.bat`**. Il lance l'appli en affichant tous ses messages : fais une capture de la fenêtre noire. Les erreurs sont aussi enregistrées dans `%APPDATA%\Sonothèque\erreurs.log`.
+1. Récupère **`Sonotheque-Setup-<version>.exe`** : dans le dossier `dist/` du PC qui l'a fabriqué (copie-le sur une clé USB ou dans un cloud), ou dans les **Releases** du dépôt GitHub (voir plus bas).
+2. Double-clique dessus et suis l'assistant. Aucun droit administrateur n'est demandé : l'appli s'installe pour ton compte Windows, dans `%LOCALAPPDATA%\Programs\sonotheque`.
+   - Si Windows affiche « Windows a protégé votre ordinateur » : « Informations complémentaires » → « Exécuter quand même ». Ce message s'affiche parce que l'installateur n'est pas signé numériquement : c'est normal pour un logiciel perso.
+3. La Sonothèque apparaît sur le Bureau et dans le menu Démarrer. Pour la désinstaller : Paramètres → Applications → Sonothèque.
 
-### Option B : créer un vrai installateur `.exe`
+Variante sans installation : **`Sonotheque-Portable-<version>.exe`** se lance directement, par exemple depuis une clé USB.
 
-Dans le dossier `sonotheque`, ouvre un terminal (clic droit → « Ouvrir dans le terminal ») :
+Ta bibliothèque (`Musique\Sonotheque`) et tes réglages (`%APPDATA%\Sonothèque`) sont conservés lors d'une mise à jour ou d'une désinstallation. Si quelque chose ne va pas, les erreurs sont enregistrées dans `%APPDATA%\Sonothèque\erreurs.log`.
+
+### Modifier le code et refabriquer l'installateur
+
+Sur n'importe quel PC avec **Node.js** (version « LTS », https://nodejs.org) et **Git** :
 
 ```
+git clone https://github.com/WqlkyHub/Service-Bridge.git
+cd Service-Bridge/sonotheque
 npm install
+npm start
+```
+
+`npm start` lance l'appli depuis le code, pour essayer tes modifications. Le premier lancement télécharge le moteur Electron (environ 120 Mo, une seule fois). Une fois satisfait :
+
+```
+npm test
 npm run dist
 ```
 
-Tu obtiens dans `dist/` un installateur (`Sonotheque-…-nsis.exe`) et une version portable sans installation (`Sonotheque-…-portable.exe`). L'appli apparaît ensuite dans le menu Démarrer comme n'importe quel logiciel.
+Le nouvel installateur et la version portable arrivent dans `dist/`. Pour une nouvelle version, augmente d'abord `"version"` dans `package.json` : l'installateur remplacera proprement l'ancienne version.
 
-> Quand la Sonothèque aura son propre dépôt GitHub, le fichier `.github/workflows/build-windows.yml` fabriquera cet `.exe` automatiquement à chaque nouvelle version : tu n'auras plus qu'à le télécharger.
+L'icône (`build/icon.png`) est dessinée par `outils/generer-icone.cjs` : modifie les couleurs ou les barres dans ce fichier, puis lance `node outils/generer-icone.cjs`.
+
+### Fabrication automatique sur GitHub
+
+Le fichier `.github/workflows/sonotheque-windows.yml` (à la racine du dépôt) fabrique l'installateur sur les serveurs de GitHub, sans rien installer chez toi :
+
+- **à la main** : onglet **Actions** → « Sonothèque : installateur Windows » → **Run workflow**. Les `.exe` sont ensuite téléchargeables en bas de la page de l'exécution (« Artifacts ») ;
+- **en publiant une version** : crée un tag `sonotheque-v0.2.0` (même numéro que dans `package.json`). Une **Release** est créée avec les deux `.exe` à télécharger.
 
 ---
 

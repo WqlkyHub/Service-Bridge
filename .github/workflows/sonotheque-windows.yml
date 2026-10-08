@@ -1,0 +1,39 @@
+# Fabrique l'installateur Windows de la Sonothèque (.exe).
+# - Manuellement (onglet Actions → « Run workflow ») : les .exe sont disponibles en « Artifacts ».
+# - À chaque tag « sonotheque-v* » (ex. sonotheque-v0.2.0) : crée une Release avec les .exe à télécharger.
+name: "Sonothèque : installateur Windows"
+
+on:
+  push:
+    tags: ['sonotheque-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+defaults:
+  run:
+    working-directory: sonotheque
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: sonotheque/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npx electron-builder --win nsis portable --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sonotheque-windows
+          path: sonotheque/dist/*.exe
+      - if: startsWith(github.ref, 'refs/tags/sonotheque-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Sonothèque ${{ github.ref_name }}
+          files: sonotheque/dist/*.exe
