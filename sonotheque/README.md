@@ -12,7 +12,7 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 - **Filtre « Usage commercial »** pour tes vidéos monétisées ou tes clients. Le bouton « Copier les crédits » prépare le texte à coller dans la description de la vidéo.
 
 ![Ma bibliothèque](docs/bibliotheque.png)
-![Recherche en ligne : source et licence au survol](docs/recherche-en-ligne.png)
+![Recherche en ligne : la fiche d'un son, avec sa source et sa licence](docs/recherche-en-ligne.png)
 ![Générer un son avec une recette](docs/generer.png)
 
 ---
