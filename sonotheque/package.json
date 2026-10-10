@@ -1,7 +1,7 @@
 {
   "name": "sonotheque",
   "productName": "Sonothèque",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Banque de sons locale (SFX, ambiances, musiques) avec recherche en ligne par mots-clés, pour le montage vidéo.",
   "main": "src/main/main.mjs",
   "type": "module",
