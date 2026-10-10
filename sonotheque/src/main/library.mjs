@@ -192,6 +192,21 @@ export function createLibrary(root) {
       changed('add', [item.id]);
       return item;
     },
+    /**
+     * Reprend les sons d'une autre bibliothèque (changement de dossier) sans déplacer les
+     * fichiers : chaque son garde son emplacement. `list` : éléments avec un chemin absolu.
+     */
+    adopt(list) {
+      const hashes = new Set([...items.values()].map((it) => it.hash).filter(Boolean));
+      const ids = [];
+      for (const it of list) {
+        if (items.has(it.id) || hashes.has(it.hash)) continue;
+        items.set(it.id, { ...it, file: this.storedPath(it.file) });
+        ids.push(it.id);
+      }
+      if (ids.length) changed('add', ids);
+      return ids.length;
+    },
     update(id, patch) {
       const it = items.get(id);
       if (!it) return null;

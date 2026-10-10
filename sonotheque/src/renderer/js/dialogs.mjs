@@ -281,7 +281,7 @@ export function editDialog(item, { onDeleted } = {}) {
 // ---------------------------------------------------------------------------
 // Réglages
 
-export function settingsDialog(ctx) {
+export function settingsDialog(ctx, { tab = 'library' } = {}) {
   const { store } = ctx;
   const st = store.settings;
   const libPath = h('code', { class: 'path' }, store.libraryRoot);
@@ -290,6 +290,7 @@ export function settingsDialog(ctx) {
   const fsClient = h('input', { class: 'input', type: 'text', value: st.freesound.clientId ?? '', placeholder: 'Client ID Freesound', autocomplete: 'off' });
   const jmClient = h('input', { class: 'input', type: 'password', placeholder: st.jamendo.hasClientId ? '•••••••• (enregistré)' : 'Colle ton Client ID Jamendo', autocomplete: 'off' });
   const translate = h('input', { type: 'checkbox', checked: st.translateOnline });
+  const commercial = h('input', { type: 'checkbox', checked: st.commercialOnly });
   const copyImport = h('input', { type: 'checkbox', checked: st.copyOnImport });
   const fsStatus = h('div', { class: 'fs-status' });
 
@@ -299,7 +300,7 @@ export function settingsDialog(ctx) {
     sourceToggles[s.id] = cb;
     return h('label', { class: 'source-item' }, cb,
       h('div', {},
-        h('div', { class: 'source-name' }, s.label, s.needsKey && !s.configured ? h('span', { class: 'warn' }, ' · clé manquante') : null),
+        h('div', { class: 'source-name' }, s.label, s.needsKey && !s.configured ? h('span', { class: 'warn' }, ' · clé manquante (onglet Connexions)') : null),
         h('div', { class: 'field-hint' }, s.description)));
   }));
 
@@ -330,6 +331,7 @@ export function settingsDialog(ctx) {
   async function save(close = true) {
     const patch = {
       translateOnline: translate.checked,
+      commercialOnly: commercial.checked,
       copyOnImport: copyImport.checked,
       sources: Object.fromEntries(Object.entries(sourceToggles).map(([id, cb]) => [id, cb.checked])),
       freesound: { clientId: fsClient.value },
@@ -343,50 +345,67 @@ export function settingsDialog(ctx) {
   }
 
   const link = (url, label) => h('button', { class: 'link', type: 'button', onclick: () => sono.openExternal(url) }, label);
+  const state = (ok, yes, no) => h('span', { class: ['badge', ok ? 'lic-green' : 'lic-gray'] }, ok ? yes : no);
+  const card = (name, badge, ...content) => h('section', { class: 'conn-card' }, h('div', { class: 'conn-head' }, h('h3', {}, name), badge), content);
 
-  openModal({
-    title: 'Réglages',
-    size: 'wide',
-    body: [
-      h('section', { class: 'settings-section' },
-        h('h3', {}, 'Bibliothèque'),
-        h('div', { class: 'row-inline' }, 'Dossier : ', libPath),
-        h('div', { class: 'row-inline' },
-          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => sono.library.openRoot() }, icon('folder', { size: 14 }), 'Ouvrir le dossier'),
-          h('button', { class: 'btn btn-sm', type: 'button', onclick: async () => {
-            const r = await sono.settings.pickLibrary();
-            if (r) {
-              ctx.onLibraryChanged(r);
-              libPath.textContent = r.library.root;
-              toast('Bibliothèque changée.', 'ok');
-            }
-          } }, 'Changer de dossier…')),
-        h('p', { class: 'field-hint' }, "Tes sons et l'index des mots-clés sont dans ce dossier ; une sauvegarde de l'index est faite chaque jour (7 jours gardés). Tu peux le mettre sur un disque externe."),
-        h('label', { class: 'check' }, copyImport, ' À l\'import, copier les fichiers dans la bibliothèque')),
+  const panels = {
+    library: h('div', { class: 'settings-panel' },
+      h('div', { class: 'row-inline' }, 'Dossier : ', libPath),
+      h('div', { class: 'row-inline' },
+        h('button', { class: 'btn btn-sm', type: 'button', onclick: () => sono.library.openRoot() }, icon('folder', { size: 14 }), 'Ouvrir le dossier'),
+        h('button', { class: 'btn btn-sm', type: 'button', onclick: async () => {
+          const r = await sono.settings.pickLibrary();
+          if (r) {
+            ctx.onLibraryChanged(r);
+            libPath.textContent = r.library.root;
+            toast('Dossier changé : tes sons déjà enregistrés restent dans la bibliothèque.', 'ok', 5000);
+          }
+        } }, 'Changer de dossier…')),
+      h('p', { class: 'field-hint' }, 'Les nouveaux sons sont rangés dans ce dossier. Si tu en changes, les sons déjà enregistrés restent dans ta bibliothèque, là où ils sont : leur emplacement est indiqué sur chaque ligne.'),
+      h('p', { class: 'field-hint' }, "L'index des mots-clés est dans ce dossier ; une sauvegarde est faite chaque jour (7 jours gardés)."),
+      h('label', { class: 'check' }, copyImport, ' À l\'import, copier les fichiers dans la bibliothèque (tes originaux restent intacts)')),
 
-      h('section', { class: 'settings-section' },
-        h('h3', {}, 'Recherche en ligne'),
-        h('label', { class: 'check' }, translate, ' Traduire ma recherche en anglais (« pluie » → « rain ») : les banques de sons sont surtout en anglais'),
-        sourceList),
+    search: h('div', { class: 'settings-panel' },
+      h('label', { class: 'check' }, translate, ' Traduire ma recherche en anglais (« pluie » → « rain ») : les banques de sons sont surtout en anglais'),
+      h('label', { class: 'check' }, commercial, ' Usage commercial : masquer les sons sous licence non commerciale ou inconnue'),
+      h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Sources interrogées'), sourceList)),
 
-      h('section', { class: 'settings-section' },
-        h('h3', {}, 'Freesound'),
-        h('p', { class: 'field-hint' }, '1. Crée un compte gratuit sur freesound.org. 2. ', link('https://freesound.org/apiv2/apply', 'Demande une clé API ↗'),
+    connections: h('div', { class: 'settings-panel' },
+      card('Freesound', state(st.freesound.hasApiKey, 'Clé enregistrée', 'Non configuré'),
+        h('p', { class: 'field-hint' }, 'Bruitages et ambiances. 1. Crée un compte gratuit sur freesound.org. 2. ', link('https://freesound.org/apiv2/apply', 'Demande une clé API ↗'),
           ' (formulaire court, accepté tout de suite). 3. Copie ici le « Client secret/Api key » et le « Client id ».'),
         field('Clé API (Client secret / Api key)', fsKey),
         field('Client ID (pour connecter ton compte)', fsClient),
         fsStatus),
-
-      h('section', { class: 'settings-section' },
-        h('h3', {}, 'Jamendo (musiques)'),
-        h('p', { class: 'field-hint' }, '1. Crée un compte développeur gratuit sur ', link('https://devportal.jamendo.com', 'devportal.jamendo.com ↗'),
+      card('Jamendo', state(st.jamendo.hasClientId, 'Clé enregistrée', 'Non configuré'),
+        h('p', { class: 'field-hint' }, 'Musiques complètes. 1. Crée un compte développeur gratuit sur ', link('https://devportal.jamendo.com', 'devportal.jamendo.com ↗'),
           '. 2. Crée une application (nom au choix). 3. Copie ici son « Client ID ».'),
         field('Client ID', jmClient)),
-
-      h('p', { class: 'field-hint' }, st.encrypted
+      h('p', { class: 'field-hint' }, 'Openverse et Internet Archive fonctionnent sans compte. ', st.encrypted
         ? 'Tes clés sont chiffrées sur ton ordinateur (coffre de Windows) et ne quittent jamais ton PC, sauf vers la source concernée.'
-        : 'Attention : chiffrement indisponible sur ce système : les clés sont stockées en clair dans le dossier de l\'appli.'),
-    ],
+        : 'Attention : chiffrement indisponible sur ce système : les clés sont stockées en clair dans le dossier de l\'appli.')),
+  };
+
+  // Onglets : un seul groupe de réglages affiché à la fois.
+  const tabs = { library: ['Bibliothèque', 'library'], search: ['Recherche', 'search'], connections: ['Connexions', 'globe'] };
+  const tabButtons = {};
+  const showTab = (id) => {
+    for (const key of Object.keys(tabs)) {
+      panels[key].hidden = key !== id;
+      tabButtons[key].classList.toggle('active', key === id);
+      tabButtons[key].setAttribute('aria-selected', String(key === id));
+    }
+  };
+  const tabBar = h('div', { class: 'settings-tabs', role: 'tablist' }, Object.entries(tabs).map(([id, [label, ico]]) => {
+    tabButtons[id] = h('button', { class: 'settings-tab', type: 'button', role: 'tab', onclick: () => showTab(id) }, icon(ico, { size: 16 }), label);
+    return tabButtons[id];
+  }));
+  showTab(tabs[tab] ? tab : 'library');
+
+  openModal({
+    title: 'Réglages',
+    size: 'wide',
+    body: [tabBar, ...Object.values(panels)],
     actions: [
       { label: 'Annuler' },
       { label: 'Enregistrer', primary: true, onClick: () => save(true) },

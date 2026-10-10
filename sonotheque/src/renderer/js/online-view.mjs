@@ -67,10 +67,23 @@ export class OnlineView {
     this.empty = h('div', { class: 'empty' });
     this.more = h('div', { class: 'more-bar' });
 
+    // Le choix des sources reste replié : un bouton l'ouvre.
+    this.filtersOpen = false;
+    this.filterBtn = h('button', {
+      class: 'icon-btn search-filter', type: 'button', title: 'Choisir les sources', 'aria-label': 'Choisir les sources', 'aria-expanded': 'false',
+      onclick: () => {
+        this.filtersOpen = !this.filtersOpen;
+        this.filtersEl.hidden = !this.filtersOpen;
+        this.filterBtn.setAttribute('aria-expanded', String(this.filtersOpen));
+        this.render({ keepScroll: true });
+      },
+    }, icon('filter', { size: 18 }));
+    this.filtersEl = h('div', { class: 'filters', hidden: true }, this.sourceChips);
+
     root.append(
       h('div', { class: 'toolbar' },
-        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon' }, icon('globe', { size: 18 })), this.search, go),
-        h('div', { class: 'filters' }, this.sourceChips),
+        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon' }, icon('globe', { size: 18 })), this.search, this.filterBtn, go),
+        this.filtersEl,
         this.info),
       h('div', { class: 'list-wrap' }, this.listEl, this.empty),
       this.more,
@@ -172,7 +185,7 @@ export class OnlineView {
       if (!s.configured) {
         this.sourceChips.append(h('button', {
           type: 'button', class: 'chip chip-muted', title: `${s.description} Clique pour ajouter ta clé gratuite.`,
-          onclick: () => settingsDialog(this.ctx),
+          onclick: () => settingsDialog(this.ctx, { tab: 'connections' }),
         }, icon('plus', { size: 12 }), `${s.label} (clé)`));
         continue;
       }
@@ -189,9 +202,15 @@ export class OnlineView {
 
   renderInfo(hidden) {
     clear(this.info);
-    if (!this.userQuery) {
-      this.info.append('Source et licence sont indiquées sur chaque son ; survole une ligne pour tous les détails.');
-      return;
+    this.filterBtn.classList.toggle('has-active', Boolean(this.filterSource));
+    this.info.hidden = !this.userQuery;
+    if (!this.userQuery) return;
+    if (this.filterSource && !this.filtersOpen) {
+      // Source choisie, panneau replié : on la rappelle, avec de quoi revenir à toutes les sources.
+      this.info.append(h('button', {
+        class: 'chip chip-on', type: 'button', title: 'Revenir à toutes les sources',
+        onclick: () => { this.filterSource = null; this.render(); },
+      }, this.store.sources.find((s) => s.id === this.filterSource)?.label ?? this.filterSource, icon('close', { size: 12 })));
     }
     if (this.translated) {
       this.info.append(`Recherche envoyée en anglais : « ${this.sentQuery} »`,
@@ -220,7 +239,7 @@ export class OnlineView {
         h('p', {}, `Tape 1 à 3 mots-clés puis Entrée. On cherche dans : ${this.enabledSources().filter((s) => s.configured).map((s) => s.label).join(', ')}.`),
         missing.length
           ? h('p', { class: 'muted' }, `Ajoute ta clé gratuite ${missing.map((s) => s.label).join(' et ')} pour beaucoup plus de résultats. `,
-            h('button', { class: 'link', type: 'button', onclick: () => settingsDialog(this.ctx) }, 'Ouvrir les réglages'))
+            h('button', { class: 'link', type: 'button', onclick: () => settingsDialog(this.ctx, { tab: 'connections' }) }, 'Ouvrir les réglages'))
           : null);
     } else if (loading) {
       this.empty.append(h('div', { class: 'loading' }, h('span', { class: 'spinner' }), 'Recherche en cours…'));
@@ -282,17 +301,18 @@ export class OnlineView {
       }, icon('plus', { size: 14 }), 'Ajouter');
     }
 
+    const info = h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Informations sur ${r.title}`, onclick: (e) => e.stopPropagation() }, icon('info', { size: 16 }));
     const meta = [r.author ? `par ${r.author}` : null, r.tags.slice(0, 4).join(', ')].filter(Boolean).join(' · ');
     row.append(
       playBtn,
       h('div', { class: 'row-main' }, h('div', { class: 'row-name' }, r.title), h('div', { class: 'row-meta' }, h('span', { class: 'text' }, meta))),
       h('div', { class: 'row-dur' }, formatDurationShort(r.duration)),
       provenance(r, r.license),
-      h('div', { class: 'row-actions-online row-actions' }, action),
+      h('div', { class: 'row-actions-online row-actions' }, info, action),
     );
     row.addEventListener('click', () => this.setCursor(index));
     row.addEventListener('dblclick', () => this.playIndex(index));
-    attachTooltip(row, () => sourceCard({
+    attachTooltip(info, () => sourceCard({
       title: r.title,
       source: r,
       duration: r.duration,

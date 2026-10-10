@@ -10,7 +10,6 @@ import { drawPeaks } from './waveform.mjs';
 import { keywordInput } from './keyword-input.mjs';
 import { openModal } from './modal.mjs';
 import { toast } from './toast.mjs';
-import { categoryLabel } from './badges.mjs';
 import { MEDIA_KINDS } from '../../shared/media-kinds.mjs';
 
 const sono = window.sono;
@@ -33,7 +32,6 @@ export class GenerateView {
     this.lastRender = null;
     this.renderToken = 0;
     this.blobUrl = null;
-    this.autoListen = true;
     this.loaded = false;
 
     root.classList.add('view-gen');
@@ -41,19 +39,12 @@ export class GenerateView {
     this.main = h('div', { class: 'gen-main' });
     root.append(h('div', { class: 'gen' },
       h('aside', { class: 'gen-side' },
-        h('div', { class: 'gen-side-head' },
-          h('h2', {}, 'Recettes de sons'),
-          h('span', { class: 'muted' }, 'Des sons fabriqués par le code : gratuits et libres de droits.')),
         this.list,
         h('div', { class: 'gen-side-foot' },
-          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => this.aiPromptDialog() }, icon('copy', { size: 14 }), 'Consigne pour Claude / ChatGPT'),
-          h('button', { class: 'btn btn-sm', type: 'button', onclick: () => this.pasteRecipeDialog() }, icon('plus', { size: 14 }), 'Coller une recette'),
-          h('div', { class: 'row-inline' },
-            h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => sono.gen.openRecipes() }, icon('folder', { size: 14 }), 'Mes recettes'),
-            h('button', { class: 'btn btn-sm btn-ghost', type: 'button', onclick: () => this.load(true) }, icon('refresh', { size: 14 }), 'Recharger')))),
+          h('button', { class: 'btn', type: 'button', title: 'Fabriquer un nouveau son avec Claude ou ChatGPT', onclick: () => this.pasteRecipeDialog() }, icon('plus', { size: 16 }), 'Créer une recette'))),
       this.main));
 
-    this.scheduleRender = debounce(() => this.renderSound({ listen: this.autoListen }), 220);
+    this.scheduleRender = debounce(() => this.renderSound({ listen: true }), 220);
     this.player.on('state', () => this.drawStage());
   }
 
@@ -105,7 +96,7 @@ export class GenerateView {
     this.lastRender = null;
     this.renderList();
     this.renderMain();
-    this.renderSound({ listen: this.autoListen });
+    this.renderSound({ listen: true });
   }
 
   renderList() {
@@ -114,12 +105,11 @@ export class GenerateView {
       ['Intégrées', this.recipes.filter((r) => r.builtIn)],
       ['Mes recettes', this.recipes.filter((r) => !r.builtIn)],
     ];
+    // Les titres de groupe n'apparaissent que s'il y a des recettes des deux sortes.
+    const titled = groups.every(([, items]) => items.length);
     for (const [title, items] of groups) {
-      this.list.append(h('div', { class: 'gen-group' }, title));
-      if (!items.length) {
-        this.list.append(h('div', { class: 'muted', style: { padding: '0 10px 8px' } }, 'Aucune pour l\'instant : utilise « Consigne pour Claude / ChatGPT » ci-dessous.'));
-        continue;
-      }
+      if (!items.length) continue;
+      if (titled) this.list.append(h('div', { class: 'gen-group' }, title));
       for (const r of items) {
         if (!r.meta) {
           this.list.append(h('div', { class: 'gen-item gen-item-error', title: r.error },
@@ -128,11 +118,10 @@ export class GenerateView {
           continue;
         }
         this.list.append(h('button', {
-          class: ['gen-item', r.key === this.currentKey && 'active'], type: 'button',
+          class: ['gen-item', r.key === this.currentKey && 'active'], type: 'button', title: r.meta.description,
           onclick: () => this.select(r.key),
         },
-        h('span', { class: 'gen-item-name' }, h('span', { class: ['dot', `dot-${r.meta.category}`] }), r.meta.name),
-        h('span', { class: 'gen-item-desc' }, r.meta.description)));
+        h('span', { class: 'gen-item-name' }, h('span', { class: ['dot', `dot-${r.meta.category}`] }), r.meta.name)));
       }
     }
   }
@@ -182,32 +171,21 @@ export class GenerateView {
       class: 'btn btn-primary', type: 'button', title: 'Maj + clic : ajout direct avec les mots-clés proposés',
       onclick: (e) => this.save({ quick: e.shiftKey }),
     }, icon('download', { size: 16 }), 'Ajouter à ma bibliothèque');
-    const auto = h('input', { type: 'checkbox', checked: this.autoListen, onchange: () => { this.autoListen = auto.checked; } });
 
+    // Le son d'abord (on le voit, on l'écoute), ses réglages en dessous.
     this.main.append(
       h('div', { class: 'gen-title' },
         h('h2', {}, meta.name),
-        h('p', {}, meta.description),
-        h('div', { class: 'row-meta' }, h('span', { class: 'cat' }, h('span', { class: ['dot', `dot-${meta.category}`] }), categoryLabel(meta.category)),
-          meta.keywords.map((k) => h('span', { class: 'kw' }, k)),
-          r.builtIn ? null : h('span', {}, `· ${r.file}`))),
-      Object.keys(meta.params).length ? params : null,
+        h('p', {}, meta.description)),
       h('div', { class: 'gen-stage' },
         this.waveCanvas,
         h('div', { class: 'gen-actions' },
           h('button', { class: 'btn', type: 'button', onclick: () => this.listen() }, icon('play', { size: 14 }), 'Écouter'),
-          h('button', { class: 'btn', type: 'button', title: 'Même réglages, autre tirage aléatoire', onclick: () => this.newVariant() }, icon('dice', { size: 16 }), 'Autre variante'),
+          h('button', { class: 'btn', type: 'button', title: 'Mêmes réglages, autre tirage aléatoire', onclick: () => this.newVariant() }, icon('dice', { size: 16 }), 'Autre variante'),
           this.status,
           h('span', { class: 'spacer' }),
-          h('label', { class: 'check' }, auto, 'Écouter à chaque réglage'),
           this.addBtn)),
-      h('div', { class: 'gen-help' },
-        h('h3', {}, 'Créer tes propres sons avec Claude ou ChatGPT'),
-        h('ol', { class: 'steps' },
-          h('li', {}, 'Clique ', h('b', {}, '« Consigne pour Claude / ChatGPT »'), ' : un mode d\'emploi est copié.'),
-          h('li', {}, 'Colle-le dans Claude (claude.ai ou Claude Code) ou ChatGPT, et décris ton son à la place des crochets.'),
-          h('li', {}, 'Copie le code qu\'il te répond, puis clique ', h('b', {}, '« Coller une recette »'), ' : tu l\'écoutes et tu l\'enregistres.')),
-        h('p', { class: 'muted' }, 'Tes recettes sont rangées dans le dossier « Recettes » de ta bibliothèque. Elles tournent dans un espace isolé, sans accès à tes fichiers ni à internet.')),
+      Object.keys(meta.params).length ? params : null,
     );
     this.drawStage();
   }
@@ -218,12 +196,7 @@ export class GenerateView {
     const playing = key && this.player.currentKey === key;
     const audio = this.player.audio;
     const progress = playing && Number.isFinite(audio.duration) && audio.duration > 0 ? audio.currentTime / audio.duration : 0;
-    const styles = getComputedStyle(document.documentElement);
-    drawPeaks(this.waveCanvas, this.lastRender?.peaks ?? null, {
-      progress,
-      color: styles.getPropertyValue('--wave-row').trim(),
-      playedColor: styles.getPropertyValue('--accent').trim(),
-    });
+    drawPeaks(this.waveCanvas, this.lastRender?.peaks ?? null, { progress, dot: Boolean(playing) });
     if (playing && this.player.playing) requestAnimationFrame(() => this.drawStage());
   }
 
@@ -266,6 +239,7 @@ export class GenerateView {
       key: `gen:${r.renderId}`,
       url: this.blobUrl,
       title: r.meta.name,
+      category: r.meta.category,
       subtitle: `Aperçu généré · variante n° ${this.seed}`,
       peaks: r.peaks,
       duration: r.duration,
@@ -330,37 +304,10 @@ export class GenerateView {
 
   // --- Recettes faites avec une IA ----------------------------------------------
 
-  async aiPromptDialog() {
-    const prompt = await sono.gen.prompt();
-    openModal({
-      title: 'Créer une recette avec Claude ou ChatGPT',
-      body: [
-        h('ol', { class: 'steps' },
-          h('li', {}, h('b', {}, 'Copie la consigne'), ' avec le bouton ci-dessous.'),
-          h('li', {}, 'Ouvre ', h('b', {}, 'Claude'), ' (claude.ai ou Claude Code) ou ', h('b', {}, 'ChatGPT'), ', colle la consigne et remplace « [décris ici ton son] » par ce que tu veux, par exemple « un vaisseau spatial qui passe au loin ».'),
-          h('li', {}, 'Copie le code de la réponse, reviens ici et clique ', h('b', {}, '« Coller une recette »'), '.'),
-          h('li', {}, 'Le son ne te plaît pas ? Demande à l\'IA de le corriger (« plus grave », « plus long »…) et recolle le code.')),
-        h('p', { class: 'muted' }, "Tu utilises ton abonnement habituel, dans ta conversation : la Sonothèque n'a pas besoin de se connecter à ton compte."),
-      ],
-      actions: [
-        { label: 'Fermer' },
-        {
-          label: 'Copier la consigne',
-          primary: true,
-          onClick: () => {
-            sono.copy(prompt);
-            toast('Consigne copiée : colle-la dans Claude ou ChatGPT.', 'ok', 5000);
-            return true;
-          },
-        },
-      ],
-    });
-  }
-
   pasteRecipeDialog() {
     const code = h('textarea', { class: 'input textarea code', spellcheck: false, placeholder: 'recipe({\n  name: …,\n  render({ … }) { … },\n});' });
     const name = h('input', { class: 'input', type: 'text', placeholder: 'Nom du fichier (facultatif)' });
-    const result = h('div', { class: 'gen-status' }, 'Colle le code donné par Claude ou ChatGPT, puis « Tester ».');
+    const result = h('div', { class: 'gen-status' }, "Le son ne te plaît pas ? Demande à l'IA de le corriger (« plus grave », « plus long ») et recolle le code.");
     let tested = null;
 
     // L'IA entoure souvent le code de ```javascript … ``` : on l'enlève.
@@ -387,9 +334,21 @@ export class GenerateView {
     };
 
     openModal({
-      title: 'Coller une recette',
+      title: 'Créer une recette',
       size: 'wide',
-      body: [h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Code de la recette'), code), h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Nom'), name), result],
+      body: [
+        h('p', { class: 'modal-text' }, 'Copie la consigne, colle-la dans Claude ou ChatGPT en décrivant ton son (« un vaisseau spatial qui passe au loin »), puis colle ici le code de la réponse. ',
+          h('button', { class: 'link', type: 'button', onclick: async () => {
+            sono.copy(await sono.gen.prompt());
+            toast('Consigne copiée : colle-la dans Claude ou ChatGPT.', 'ok', 5000);
+          } }, 'Copier la consigne')),
+        h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Code de la recette'), code),
+        h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Nom'), name),
+        result,
+        h('div', { class: 'row-inline field-hint' },
+          h('button', { class: 'link', type: 'button', onclick: () => sono.gen.openRecipes() }, 'Ouvrir le dossier de mes recettes'),
+          h('button', { class: 'link', type: 'button', onclick: () => this.load(true) }, 'Recharger la liste')),
+      ],
       actions: [
         { label: 'Annuler' },
         { label: 'Tester', onClick: async () => { await test(); return false; } },

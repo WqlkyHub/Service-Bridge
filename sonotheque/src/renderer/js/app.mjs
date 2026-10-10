@@ -37,6 +37,7 @@ class Store extends Emitter {
   settings = null;
   sources = [];
   libraryRoot = '';
+  missing = new Set(); // sons dont le fichier est introuvable
 
   setItems(list) {
     this.items = new Map(list.map((it) => [it.id, it]));
@@ -68,6 +69,9 @@ async function main() {
     onAutoplay: (on) => writePref('autoplay', on),
   });
 
+  // Le fond et les éléments « allumés » prennent la teinte de la catégorie du son écouté.
+  player.on('state', () => { document.documentElement.dataset.cat = player.entry?.category ?? ''; });
+
   let activeTab = 'library';
   const ctx = {
     store,
@@ -91,8 +95,20 @@ async function main() {
       store.libraryRoot = r.library.root;
       store.setSettings(r.settings);
       store.setItems(r.library.items);
+      refreshMissing();
     },
   };
+
+  // Fichiers introuvables : vérifiés au démarrage, puis à chaque retour sur la fenêtre
+  // (un disque a pu être branché ou débranché entre-temps).
+  async function refreshMissing() {
+    const ids = await sono.library.missing();
+    if (ids.length === store.missing.size && ids.every((id) => store.missing.has(id))) return;
+    store.missing = new Set(ids);
+    store.emit('items', { kind: 'missing' });
+  }
+  window.addEventListener('focus', refreshMissing);
+  refreshMissing();
 
   const library = new LibraryView($('#view-library'), ctx);
   const online = new OnlineView($('#view-online'), ctx);

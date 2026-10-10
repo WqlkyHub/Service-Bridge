@@ -8,7 +8,7 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 - **Tu les glisses dans ta timeline** Premiere Pro ou DaVinci Resolve : il suffit de glisser la ligne.
 - **Tu cherches de nouveaux sons sur internet** dans 4 sources à la fois (Freesound, Openverse, Jamendo, Internet Archive). Tu les écoutes avant de les télécharger et tu les ajoutes en un clic, avec 1 à 3 mots-clés.
 - **Tu génères tes propres sons avec du code** (onglet « Générer ») : whoosh, impacts, montées, clics, bips, lasers, vent, pluie… Tu règles avec des curseurs, tu écoutes et tu ajoutes. C'est gratuit, sans compte, et libre de droits. Claude ou ChatGPT peuvent t'écrire de nouvelles « recettes » de sons.
-- **La source et la licence sont toujours visibles** sur chaque son, et une fiche complète s'affiche au survol : auteur, page d'origine, ce que la licence autorise.
+- **La source et la licence sont toujours visibles** sur chaque son, et une fiche complète s'ouvre depuis le bouton « infos » de la ligne : auteur, page d'origine, ce que la licence autorise.
 - **Filtre « Usage commercial »** pour tes vidéos monétisées ou tes clients. Le bouton « Copier les crédits » prépare le texte à coller dans la description de la vidéo.
 
 ![Ma bibliothèque](docs/bibliotheque.png)
@@ -149,7 +149,9 @@ Sonotheque\
   .sauvegardes\                    ← copie de l'index chaque jour (7 jours)
 ```
 
-Tu peux déplacer tout le dossier (disque externe, autre PC) : rien ne casse, il suffit de le rechoisir dans les Réglages.
+Au premier lancement, l'appli te demande où ranger ta bibliothèque. Tu peux déplacer tout le dossier (disque externe, autre PC) : rien ne casse, il suffit de le rechoisir dans les Réglages.
+
+Si tu choisis un **autre dossier** dans les Réglages, les sons déjà enregistrés restent dans ta bibliothèque, là où ils sont : seuls les nouveaux sons vont dans le nouveau dossier. Chaque ligne indique l'emplacement d'un son rangé ailleurs, et signale « Fichier introuvable » si le fichier a disparu (disque débranché, fichier déplacé).
 
 ---
 

@@ -129,6 +129,26 @@ test('index et sauvegarde abîmés, entrées incomplètes : la bibliothèque s\'
   }
 });
 
+test('changement de dossier : les sons déjà enregistrés suivent, sans doublon', () => {
+  const oldRoot = tmpDir('old');
+  const newRoot = tmpDir('new');
+  const old = createLibrary(oldRoot);
+  const a = old.add({ name: 'a', file: path.join('Sons', 'a.wav'), hash: 'h1' });
+  const carried = old.list().map((it) => ({ ...it, file: old.absPath(it) }));
+
+  const lib = createLibrary(newRoot);
+  lib.add({ name: 'déjà là', file: path.join('Sons', 'b.wav'), hash: 'h2' });
+  assert.equal(lib.adopt(carried), 1);
+  assert.equal(lib.get(a.id).file, path.join(oldRoot, 'Sons', 'a.wav'), 'chemin complet vers l\'ancien dossier');
+  assert.equal(lib.adopt(carried), 0, 'pas de doublon si on recommence');
+
+  // Retour à l'ancien dossier : le son y est de nouveau enregistré en chemin relatif.
+  const back = createLibrary(oldRoot);
+  back.adopt(lib.list().map((it) => ({ ...it, file: lib.absPath(it) })));
+  assert.equal(back.list().length, 2);
+  assert.equal(back.get(a.id).file, path.join('Sons', 'a.wav'));
+});
+
 function fakeFetch(routes) {
   return async (url) => {
     const r = routes[url];

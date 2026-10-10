@@ -60,6 +60,7 @@ export function deepMerge(base, patch) {
  */
 export function createSettingsStore({ file, defaultLibraryPath, crypto = null }) {
   let data = defaultSettings(defaultLibraryPath);
+  const isNew = !fs.existsSync(file); // premier lancement
 
   try {
     const raw = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -93,6 +94,7 @@ export function createSettingsStore({ file, defaultLibraryPath, crypto = null })
   }
 
   return {
+    isNew,
     get: () => data,
     update(patch) {
       data = deepMerge(data, patch);

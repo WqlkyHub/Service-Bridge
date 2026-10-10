@@ -189,7 +189,7 @@ function createWindow() {
     minWidth: 920,
     minHeight: 600,
     title: 'Sonothèque',
-    backgroundColor: '#111217',
+    backgroundColor: '#e3ebea',
     show: false,
     autoHideMenuBar: true,
     webPreferences: {
@@ -284,9 +284,12 @@ function registerIpc() {
     if (deleteFiles) {
       for (const it of removed) {
         const file = library.absPath(it);
-        // On ne met à la corbeille que les fichiers rangés DANS la bibliothèque,
-        // jamais les originaux importés « sur place ».
-        if (file && isInside(library.root, file) && fs.existsSync(file)) {
+        // On ne met à la corbeille que les fichiers rangés par l'appli (dans le dossier actuel
+        // ou un ancien dossier de la bibliothèque), jamais les originaux importés « sur place ».
+        // Pour un ancien dossier, on exige en plus le rangement de l'appli (Sons/<catégorie>/fichier) :
+        // un index modifié à la main ne peut pas faire jeter un fichier quelconque.
+        const inOldLibrary = it.managed && /[\\/](Sons|Visuels)[\\/][^\\/]+[\\/][^\\/]+$/.test(file ?? '');
+        if (file && (inOldLibrary || isInside(library.root, file)) && fs.existsSync(file)) {
           try {
             await shell.trashItem(file);
             trashed++;
@@ -304,6 +307,20 @@ function registerIpc() {
   });
 
   ipcMain.handle('lib:openRoot', () => shell.openPath(library.root));
+
+  /** Identifiants des sons dont le fichier est introuvable (disque débranché, fichier déplacé…). */
+  ipcMain.handle('lib:missing', async () => {
+    const lib = library;
+    const missing = [];
+    await Promise.all(lib.list().map(async (it) => {
+      try {
+        await fs.promises.access(lib.absPath(it));
+      } catch {
+        missing.push(it.id);
+      }
+    }));
+    return missing;
+  });
 
   ipcMain.on('lib:startDrag', (e, ids) => {
     const files = ids.map((id) => library.absPath(library.get(id))).filter((f) => f && fs.existsSync(f));
@@ -397,7 +414,11 @@ function registerIpc() {
       properties: ['openDirectory', 'createDirectory'],
     });
     if (res.canceled || !res.filePaths[0]) return null;
+    // Les sons déjà enregistrés suivent : ils restent où ils sont, avec leur chemin complet.
+    // « managed » : fichier rangé par l'appli (et non un original importé sur place).
+    const carried = library.list().map((it) => ({ ...it, file: library.absPath(it), managed: it.managed || !path.isAbsolute(it.file) }));
     openLibrary(res.filePaths[0]); // d'abord : si le dossier est inutilisable, les réglages ne changent pas
+    library.adopt(carried);
     settings.update({ libraryPath: res.filePaths[0] });
     return { settings: settings.publicView(), library: { root: library.root, items: library.list() } };
   });
@@ -534,6 +555,23 @@ app.whenReady().then(() => {
       defaultLibraryPath,
       crypto,
     });
+    if (settings.isNew) {
+      // Premier lancement : on demande où ranger la bibliothèque.
+      const choice = dialog.showMessageBoxSync({
+        type: 'question',
+        title: 'Bienvenue dans la Sonothèque',
+        message: 'Où veux-tu ranger ta bibliothèque de sons ?',
+        detail: `Tes sons et leurs mots-clés seront enregistrés dans ce dossier.\n\nPar défaut : ${defaultLibraryPath}\n\nTu pourras en changer plus tard dans les Réglages.`,
+        buttons: ['Utiliser le dossier par défaut', 'Choisir un autre dossier…'],
+        defaultId: 0,
+        cancelId: 0,
+        noLink: true,
+      });
+      const picked = choice === 1
+        ? dialog.showOpenDialogSync({ title: 'Choisir le dossier de la bibliothèque', defaultPath: app.getPath('music'), properties: ['openDirectory', 'createDirectory'] })?.[0]
+        : null;
+      settings.update({ libraryPath: picked ?? defaultLibraryPath }); // enregistre : la question n'est posée qu'une fois
+    }
     try {
       openLibrary(settings.get().libraryPath);
     } catch (err) {

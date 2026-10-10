@@ -20,6 +20,7 @@ contextBridge.exposeInMainWorld('sono', {
     remove: (ids, opts) => ipcRenderer.invoke('lib:remove', ids, opts),
     reveal: (id) => ipcRenderer.invoke('lib:reveal', id),
     openRoot: () => ipcRenderer.invoke('lib:openRoot'),
+    missing: () => ipcRenderer.invoke('lib:missing'),
     startDrag: (ids) => ipcRenderer.send('lib:startDrag', ids),
     fileUrl: (id) => `sfxlib://item/${encodeURIComponent(id)}`,
     onChanged: (fn) => on('lib:changed', fn),

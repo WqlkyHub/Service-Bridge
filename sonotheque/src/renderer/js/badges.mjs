@@ -1,4 +1,4 @@
-// Pastilles « source » et « licence », et fiche détaillée affichée au survol.
+// Pastilles « source » et « licence », et fiche détaillée ouverte depuis le bouton « infos » d'une ligne.
 
 import { h, formatDuration, formatSize, formatDate, hostOf } from './dom.mjs';
 import { LEVEL_INFO } from '../../shared/licenses.mjs';
@@ -64,7 +64,7 @@ export function sourceCard({ title, source, duration, size, quality, note, added
     row('Durée', duration != null ? formatDuration(duration) : null),
     row('Taille', size ? formatSize(size) : null),
     row('Ajouté le', addedAt ? formatDate(addedAt) : null),
-    row('Dans la biblio.', file),
+    row('Emplacement', file),
     tags?.length ? row('Tags', tags.slice(0, 12).join(', ')) : null,
     note ? h('div', { class: 'tip-note' }, note) : null,
   );

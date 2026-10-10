@@ -1,23 +1,39 @@
-// Info-bulle riche qui suit la ligne survolée (affichée après un court délai).
+// Fiche d'informations attachée à un bouton « infos » : elle s'affiche quand on s'arrête dessus,
+// tout de suite au clic ou au clavier, et suit la souris.
 
 import { h, clear } from './dom.mjs';
 
-const DELAY = 380;
+const DELAY = 150;
 let el;
 let timer = null;
 let current = null;
 
 function host() {
-  el ??= document.body.appendChild(h('div', { class: 'tooltip', role: 'tooltip' }));
+  if (!el) {
+    el = document.body.appendChild(h('div', { class: 'tooltip', role: 'tooltip' }));
+    // Une ligne redessinée pendant que sa fiche est ouverte emporte son bouton : sans ceci,
+    // la fiche resterait affichée. (On ne touche pas au délai en cours : le nouveau bouton,
+    // sous la souris, vient peut-être de programmer son affichage.)
+    document.addEventListener('mousemove', () => {
+      if (current && !current.isConnected) {
+        current = null;
+        el.classList.remove('visible');
+      }
+    });
+  }
   return el;
 }
 
 /**
- * Attache une info-bulle à `target`. `build()` renvoie le contenu (appelé à l'affichage).
- * `key` identifie la ligne : si elle est redessinée pendant le délai, on retrouve la nouvelle.
+ * Attache une fiche à `target`. `build()` renvoie le contenu (appelé à l'affichage).
+ * `key` identifie la ligne : si elle est redessinée pendant le délai, on retrouve le nouveau bouton.
  */
 export function attachTooltip(target, build, key = null) {
   if (key) target.dataset.tipKey = key;
+  const below = () => {
+    const r = target.getBoundingClientRect();
+    return [r.left, r.bottom - 8];
+  };
   target.addEventListener('mouseenter', (e) => {
     clearTimeout(timer);
     const { clientX, clientY } = e;
@@ -27,7 +43,14 @@ export function attachTooltip(target, build, key = null) {
     if (current === target) position(e.clientX, e.clientY);
   });
   target.addEventListener('mouseleave', hideTooltip);
-  target.addEventListener('mousedown', hideTooltip);
+  target.addEventListener('click', () => {
+    clearTimeout(timer);
+    show(target, build(), ...below());
+  });
+  target.addEventListener('focus', () => {
+    if (target.matches(':focus-visible')) show(target, build(), ...below());
+  });
+  target.addEventListener('blur', hideTooltip);
 }
 
 function show(target, content, x, y) {

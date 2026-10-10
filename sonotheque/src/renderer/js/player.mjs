@@ -1,8 +1,10 @@
 // Lecteur audio (barre du bas) : lecture, forme d'onde cliquable, boucle, volume.
 
 import { h, clear, formatDuration, Emitter } from './dom.mjs';
-import { drawPeaks, decodePeaks } from './waveform.mjs';
+import { drawStrings, decodePeaks } from './waveform.mjs';
 import { icon } from './icons.mjs';
+
+const CALM = matchMedia('(prefers-reduced-motion: reduce)').matches; // pas de vibration des cordes
 
 export class Player extends Emitter {
   constructor(root, { volume = 0.8, onVolume, autoplay = true, onAutoplay } = {}) {
@@ -37,6 +39,8 @@ export class Player extends Emitter {
       },
     });
     this.actions = h('div', { class: 'pl-actions' });
+    this.root = root;
+    this.level = 0; // niveau du son à l'endroit écouté : règle l'ampleur de la vibration des cordes
 
     root.append(
       this.btn,
@@ -148,11 +152,20 @@ export class Player extends Emitter {
 
   changed() {
     this.renderButton();
-    // Animation fluide de la tête de lecture tant que le son joue.
+    this.root.classList.toggle('is-playing', this.playing);
+    // Animation fluide de la tête de lecture tant que le son joue, et un peu après chaque
+    // changement : le temps que la couleur du paysage ait fini de fondre vers la nouvelle teinte.
     cancelAnimationFrame(this.raf);
+    const settleUntil = performance.now() + 1300;
     const tick = () => {
       this.drawProgress();
-      if (this.playing) this.raf = requestAnimationFrame(tick);
+      if (this.playing || performance.now() < settleUntil) {
+        this.raf = requestAnimationFrame(tick);
+      } else if (this.level) {
+        // Dernière image : cordes au repos, même si l'animation a été suspendue (fenêtre cachée).
+        this.level = 0;
+        this.drawProgress();
+      }
     };
     tick();
     this.emit('state', { key: this.currentKey, playing: this.playing });
@@ -168,11 +181,12 @@ export class Player extends Emitter {
     const d = this.audio.duration;
     const t = this.audio.currentTime;
     const progress = Number.isFinite(d) && d > 0 ? t / d : 0;
-    if (!this.colors) {
-      const styles = getComputedStyle(document.documentElement);
-      this.colors = { color: styles.getPropertyValue('--wave').trim(), playedColor: styles.getPropertyValue('--accent').trim() };
-    }
-    drawPeaks(this.canvas, this.peaks, { progress, ...this.colors });
+    // Les cordes vibrent selon le niveau du son à l'endroit écouté (d'après sa forme d'onde),
+    // et reviennent doucement au repos à la pause.
+    const p = this.peaks;
+    const target = !this.playing || CALM ? 0 : p?.length ? p[Math.min(p.length - 1, Math.floor(progress * p.length))] : 0.5;
+    this.level += (target - this.level) * 0.18;
+    drawStrings(this.canvas, { progress, level: this.level, time: performance.now() / 1000, head: Boolean(this.entry) });
     this.time.textContent = `${formatDuration(t)} / ${formatDuration(Number.isFinite(d) ? d : this.entry?.duration)}`;
   }
 }

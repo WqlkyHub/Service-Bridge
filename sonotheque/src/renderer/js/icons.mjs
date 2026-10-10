@@ -27,6 +27,7 @@ const PATHS = {
   info: ['M12 3a9 9 0 1 1 0 18 9 9 0 0 1 0-18z', 'M12 11v5.5M12 7.5h.01'],
   trash: ['M5 7h14', 'M9.5 7V4.5h5V7', 'M7 7l1 13h8l1-13'],
   close: ['M6 6l12 12M18 6 6 18'],
+  filter: ['M4 7h9M17 7h3', 'M4 17h3M11 17h9', 'M15 4.5v5', 'M9 14.5v5'],
 };
 
 const FILLED = new Set(['play', 'pause']);

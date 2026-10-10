@@ -84,10 +84,25 @@ export class LibraryView {
     this.empty = h('div', { class: 'empty' });
     this.selBar = h('div', { class: 'selbar' });
 
+    // Les filtres restent repliés : un bouton les ouvre, et seuls les filtres actifs s'affichent.
+    this.filtersOpen = false;
+    this.filterBtn = h('button', {
+      class: 'icon-btn search-filter', type: 'button', title: 'Filtres et tri', 'aria-label': 'Filtres et tri', 'aria-expanded': 'false',
+      onclick: () => {
+        this.filtersOpen = !this.filtersOpen;
+        this.filtersEl.hidden = !this.filtersOpen;
+        this.filterBtn.setAttribute('aria-expanded', String(this.filtersOpen));
+        this.renderActiveFilters();
+      },
+    }, icon('filter', { size: 18 }));
+    this.filtersEl = h('div', { class: 'filters', hidden: true }, this.catChips, h('span', { class: 'sep' }), this.favBtn, h('span', { class: 'spacer' }), this.sortSel);
+    this.activeEl = h('div', { class: 'active-filters' });
+
     root.append(
       h('div', { class: 'toolbar' },
-        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon' }, icon('search', { size: 18 })), this.search),
-        h('div', { class: 'filters' }, this.catChips, h('span', { class: 'sep' }), this.favBtn, h('span', { class: 'spacer' }), this.count, this.sortSel)),
+        h('div', { class: 'search-wrap' }, h('span', { class: 'search-icon' }, icon('search', { size: 18 })), this.search, this.filterBtn),
+        this.filtersEl,
+        this.activeEl),
       h('div', { class: 'list-wrap' }, this.listEl, this.empty),
       this.selBar,
     );
@@ -122,6 +137,27 @@ export class LibraryView {
     this.favBtn.classList.toggle('chip-on', this.favoritesOnly);
   }
 
+  /** Sous la recherche : les filtres actifs (à retirer d'un clic) et le nombre de sons trouvés. */
+  renderActiveFilters() {
+    clear(this.activeEl);
+    const active = [];
+    if (this.category) active.push([categoryLabel(this.category), () => { this.category = null; }]);
+    if (this.favoritesOnly) active.push(['Favoris', () => { this.favoritesOnly = false; }]);
+    if (this.sort !== 'relevance') active.push([`Tri : ${this.sortSel.selectedOptions[0].textContent.toLowerCase()}`, () => { this.sort = 'relevance'; this.sortSel.value = 'relevance'; }]);
+    this.filterBtn.classList.toggle('has-active', active.length > 0);
+    this.activeEl.hidden = !active.length && !this.query.trim();
+    if (this.activeEl.hidden) return;
+    if (!this.filtersOpen) {
+      for (const [label, remove] of active) {
+        this.activeEl.append(h('button', {
+          class: 'chip chip-on', type: 'button', title: 'Retirer ce filtre',
+          onclick: () => { remove(); this.update(); },
+        }, label, icon('close', { size: 12 })));
+      }
+    }
+    this.activeEl.append(h('span', { class: 'spacer' }), this.count);
+  }
+
   getIndex = (item) => {
     let idx = this.indexCache.get(item);
     if (!idx) {
@@ -145,6 +181,7 @@ export class LibraryView {
     for (const id of this.selected) if (!this.store.items.has(id)) this.selected.delete(id);
     this.renderCategoryChips();
     this.count.textContent = `${this.results.length} son${this.results.length > 1 ? 's' : ''}${items.length !== this.results.length ? ` sur ${items.length}` : ''}`;
+    this.renderActiveFilters();
     this.list.setItems(this.results, { keepScroll });
     this.renderEmpty(items.length);
     this.renderSelBar();
@@ -195,7 +232,7 @@ export class LibraryView {
   renderRow(item, index) {
     const playing = this.player.currentKey === `lib:${item.id}` && this.player.playing;
     const row = h('div', {
-      class: ['row', this.selected.has(item.id) && 'row-selected', index === this.cursor && 'row-cursor', playing && 'row-playing'],
+      class: ['row', `cat-${item.category}`, this.selected.has(item.id) && 'row-selected', index === this.cursor && 'row-cursor', playing && 'row-playing'],
       role: 'listitem',
       draggable: 'true',
       dataset: { id: item.id },
@@ -212,18 +249,24 @@ export class LibraryView {
     }, icon(playing ? 'pause' : 'play', { size: 14 }));
 
     const wave = h('canvas', { class: 'row-wave', 'aria-hidden': 'true' });
-    requestAnimationFrame(() => drawPeaks(wave, decodePeaks(item.peaks), { color: getWaveColor(), playedColor: getWaveColor() }));
+    requestAnimationFrame(() => drawPeaks(wave, decodePeaks(item.peaks), { progress: playing ? 1 : 0 }));
 
+    const loc = this.locationOf(item);
     const meta = h('div', { class: 'row-meta' }, categoryTag(item.category),
       item.keywords.map((k) => h('button', {
         class: 'kw', type: 'button', title: `Chercher « ${k} »`,
         onclick: (e) => { e.stopPropagation(); this.setQuery(k); },
-      }, k)));
+      }, k)),
+      loc.missing ? h('span', { class: 'loc loc-missing', title: loc.full }, 'Fichier introuvable')
+        : loc.external ? h('span', { class: 'loc', title: loc.full }, icon('folder', { size: 12 }), loc.short) : null);
 
     const fav = h('button', {
       class: ['icon-btn', item.favorite && 'fav-on'], type: 'button', title: item.favorite ? 'Retirer des favoris (F)' : 'Ajouter aux favoris (F)',
       onclick: (e) => { e.stopPropagation(); sono.library.update(item.id, { favorite: !item.favorite }); },
     }, icon('star', { size: 16, filled: item.favorite }));
+
+    // La fiche du son (source, licence, emplacement…) s'ouvre depuis ce bouton, pas au survol de la ligne.
+    const info = h('button', { class: 'icon-btn', type: 'button', 'aria-label': `Informations sur ${item.name}`, onclick: (e) => e.stopPropagation() }, icon('info', { size: 16 }));
 
     row.append(
       playBtn,
@@ -232,6 +275,7 @@ export class LibraryView {
       h('div', { class: 'row-dur' }, formatDurationShort(item.duration)),
       provenance(item.source),
       h('div', { class: 'row-actions' },
+        info,
         fav,
         h('button', { class: 'icon-btn', type: 'button', title: 'Modifier (E)', onclick: (e) => { e.stopPropagation(); this.edit(item); } }, icon('edit', { size: 16 })),
         h('button', { class: 'icon-btn', type: 'button', title: "Afficher dans l'Explorateur", onclick: (e) => { e.stopPropagation(); sono.library.reveal(item.id); } }, icon('folder', { size: 16 }))),
@@ -245,17 +289,32 @@ export class LibraryView {
       const ids = this.selected.has(item.id) ? [...this.selected] : [item.id];
       sono.library.startDrag(ids);
     });
-    attachTooltip(row, () => sourceCard({
+    attachTooltip(info, () => sourceCard({
       title: item.name,
       source: item.source,
       duration: item.duration,
       size: item.size,
       addedAt: item.addedAt,
-      file: item.file,
+      file: loc.full,
       tags: item.tags,
-      note: "Glisse la ligne dans Premiere Pro ou DaVinci Resolve pour l'ajouter au montage.",
+      note: loc.missing
+        ? 'Fichier introuvable à cet emplacement : disque débranché, fichier déplacé ou supprimé.'
+        : "Glisse la ligne dans Premiere Pro ou DaVinci Resolve pour l'ajouter au montage.",
     }), `lib:${item.id}`);
     return row;
+  }
+
+  /**
+   * Où le fichier est rangé. `external` : hors du dossier actuel de la bibliothèque (ancien
+   * dossier, ou original importé sur place) ; `short` : version courte, ex. « D:\…\Bruitage ».
+   */
+  locationOf(item) {
+    const external = /^([a-zA-Z]:[\\/]|[\\/])/.test(item.file);
+    const root = this.store.libraryRoot;
+    const full = external ? item.file : `${root}${root.includes('\\') ? '\\' : '/'}${item.file}`;
+    const parts = full.split(/[\\/]/).slice(0, -1).filter(Boolean);
+    const short = parts.length > 2 ? `${parts[0]}\\…\\${parts.at(-1)}` : parts.join('\\');
+    return { external, full, short, missing: this.store.missing.has(item.id) };
   }
 
   onRowClick(e, index) {
@@ -327,6 +386,7 @@ export class LibraryView {
       key: `lib:${item.id}`,
       url: sono.library.fileUrl(item.id),
       title: item.name,
+      category: item.category,
       subtitle: [categoryLabel(item.category), item.keywords.join(', ')].filter(Boolean).join(' · '),
       peaks: item.peaks,
       duration: item.duration,
@@ -385,10 +445,4 @@ export class LibraryView {
     sono.copy(`Sons :\n${lines.join('\n')}`);
     toast(`${lines.length} crédit${lines.length > 1 ? 's' : ''} copié${lines.length > 1 ? 's' : ''} : colle-les dans la description de ta vidéo.`, 'ok', 5000);
   }
-}
-
-let waveColor;
-function getWaveColor() {
-  waveColor ??= getComputedStyle(document.documentElement).getPropertyValue('--wave-row').trim() || '#6b6f8a';
-  return waveColor;
 }
