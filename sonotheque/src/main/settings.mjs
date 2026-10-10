@@ -19,8 +19,9 @@ export function defaultSettings(defaultLibraryPath) {
     copyOnImport: true,
     commercialOnly: false,
     translateOnline: true,
+    autoTags: true, // mots-clés automatiques par reconnaissance des sons
     volume: 0.8,
-    sources: { freesound: true, openverse: true, jamendo: true, archive: true },
+    sources: { freesound: true, openverse: true, jamendo: true, archive: true, bbc: true },
     freesound: { apiKey: '', clientId: '', oauth: null },
     jamendo: { clientId: '' },
   };
@@ -108,6 +109,7 @@ export function createSettingsStore({ file, defaultLibraryPath, crypto = null })
         copyOnImport: data.copyOnImport,
         commercialOnly: data.commercialOnly,
         translateOnline: data.translateOnline,
+        autoTags: data.autoTags,
         volume: data.volume,
         sources: data.sources,
         freesound: {

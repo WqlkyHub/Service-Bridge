@@ -1,35 +1,35 @@
 # Feuille de route
 
-## Prochaines améliorations possibles (audio)
+La Sonothèque est destinée à d'autres monteurs que son auteur. L'ordre ci-dessous a été fixé en octobre 2026.
 
-- **Plus de sources** : par exemple BBC Sound Effects (usage non commercial uniquement) ou Sonniss GDC (packs gratuits à importer).
-- **Mots-clés par IA (option)** : analyser un son pour proposer des mots-clés quand le nom du fichier n'en contient aucun (`AUDIO_0012.wav`).
-- **Collections / projets** : regrouper les sons d'un montage, puis exporter les crédits du projet en un clic.
-- **Découpe rapide** : choisir un passage sur la forme d'onde et ne glisser que ce morceau dans la timeline.
-- **Génération : plus de recettes** (tonnerre, pas, feu de camp, foule…) et la possibilité de superposer plusieurs recettes.
-- **Recherche par similarité** : « des sons qui ressemblent à celui-ci » (l'API Freesound le permet déjà).
+## Fait depuis la 0.2.0 (pas encore publié)
 
-## Effets visuels : ce qui est déjà prêt
+- **Mots-clés automatiques** : chaque son est écouté par un modèle de reconnaissance qui tourne sur le PC. Ce qu'il y entend (pluie, porte, pas…) devient cherchable, et un son sans aucun mot-clé (« AUDIO_0012.wav ») reçoit les siens.
+- **Sons similaires** : pendant l'écoute d'un son de la bibliothèque, le bouton « Similaires » affiche ceux qui lui ressemblent à l'oreille.
+- **Nouvelle source : BBC Sound Effects**, 33 000 bruitages et ambiances, en usage non commercial uniquement.
+- **Découpe rapide** : le bouton ciseaux du lecteur ouvre le tracé du son ; on y choisit un passage, on l'écoute en boucle, puis on le glisse seul dans la timeline ou on l'ajoute à la bibliothèque.
 
-L'application a été pensée pour accueillir plus tard des **éléments visuels** : overlays, transitions, textures, fonds animés, LUTs. Ce qui est déjà générique :
+## En cours : mieux trouver
 
-| Brique | Où | État |
-|---|---|---|
-| Types de médias | `src/shared/media-kinds.mjs` | Un type `visual` existe déjà (désactivé), avec ses catégories : Overlay, Transition, Texture. |
-| Bibliothèque | `src/main/library.mjs` | Chaque élément a un champ `kind` ; les fichiers visuels seront rangés dans `Visuels/<catégorie>/`. |
-| Recherche, mots-clés, favoris | `src/shared/search.mjs`, `keywords.mjs` | Indépendants du type de média. |
-| Licences et crédits | `src/shared/licenses.mjs` | Identiques pour les images et les vidéos (Creative Commons). |
-| Sources en ligne | `src/main/sources/` | Chaque source déclare `kinds: ['audio']` ; une source visuelle déclarera `kinds: ['visual']`. |
-| Glisser vers Premiere / DaVinci | `lib:startDrag` dans `main.mjs` | Fonctionne pour n'importe quel fichier. |
+- **Sons similaires en ligne**, via Freesound (demande une clé Freesound) : remis à plus tard.
 
-### Étapes pour activer les visuels
 
-1. Dans `media-kinds.mjs`, passer `visual.enabled` à `true`.
-2. **Import** : lire la durée et la taille des vidéos (`ffprobe`, via le paquet `ffprobe-static`) et générer une vignette (une image extraite de la vidéo).
-3. **Aperçu** : dans l'interface, un lecteur `<video>` à la place de la forme d'onde quand `kind === 'visual'`, et une vignette à la place de la mini forme d'onde.
-4. **Sources en ligne visuelles**, gratuites avec clé :
-   - **Pexels** (vidéos et photos, licence Pexels : usage commercial OK, sans crédit obligatoire) ;
-   - **Pixabay** (vidéos et images, licence Pixabay) ;
-   - **Openverse** (images Creative Commons, via le même service que pour l'audio, endpoint `/v1/images/`).
-   Il faudra ajouter les licences « Pexels » et « Pixabay » dans `licenses.mjs`.
-5. **Onglets** : un sélecteur « Audio / Visuels » au-dessus de la recherche, qui filtre sur `kind`.
+## Ensuite
+
+1. **LUTs et presets pour DaVinci Resolve et Premiere Pro** (remplace l'ancien projet « effets visuels »).
+   - LUTs (`.cube`, lus par les deux logiciels) : les ranger, les prévisualiser sur une image, les installer dans le dossier du logiciel, en générer avec des curseurs. Reste à voir s'il existe une source en ligne aux licences claires.
+   - Presets : les ranger et les installer. Ils sont propres à chaque logiciel et ne peuvent pas être prévisualisés par l'appli.
+   - Ce qui est déjà générique dans le code : le champ `kind` de chaque élément (`src/shared/media-kinds.mjs`), la recherche, les mots-clés, les licences et le glisser-déposer.
+
+## Avant une vraie publication
+
+- Prévenir quand une nouvelle version existe, et l'installer sans passer par GitHub.
+- Signer l'installateur, pour supprimer l'avertissement de Windows.
+- Vérifier à la main : la question du premier lancement, le changement de dossier de la bibliothèque, et le glisser d'un extrait vers Premiere Pro et DaVinci Resolve.
+
+## Idées non décidées
+
+- **Projets de montage** : une liste de sons par vidéo, avec export des crédits en un clic.
+- **« Retrouver le fichier »** quand un son est marqué introuvable.
+- **Mode sombre**, pour l'usage à côté d'un logiciel de montage.
+- **Plus de recettes de génération** (tonnerre, pas, feu de camp, foule…) et la possibilité d'en superposer plusieurs.

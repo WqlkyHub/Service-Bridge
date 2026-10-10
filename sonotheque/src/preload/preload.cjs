@@ -21,6 +21,12 @@ contextBridge.exposeInMainWorld('sono', {
     reveal: (id) => ipcRenderer.invoke('lib:reveal', id),
     openRoot: () => ipcRenderer.invoke('lib:openRoot'),
     missing: () => ipcRenderer.invoke('lib:missing'),
+    /** Découpe rapide : préparer un extrait, le glisser dans le montage, l'ajouter à la bibliothèque. */
+    cut: {
+      prepare: (params) => ipcRenderer.invoke('cut:prepare', params),
+      startDrag: (token) => ipcRenderer.send('cut:startDrag', token),
+      save: (params) => ipcRenderer.invoke('cut:save', params),
+    },
     startDrag: (ids) => ipcRenderer.send('lib:startDrag', ids),
     fileUrl: (id) => `sfxlib://item/${encodeURIComponent(id)}`,
     onChanged: (fn) => on('lib:changed', fn),

@@ -132,3 +132,26 @@ test('types de fichiers', () => {
   assert.ok(isPlayable('audio', 'flac'));
   assert.ok(!isPlayable('audio', 'aiff'));
 });
+
+test('mots-clés automatiques : catégories reconnues → mots cherchables', async () => {
+  const { pickClasses, tagWords, frenchWord } = await import('../src/shared/sound-tags.mjs');
+  const classes = ['Speech', 'Rain on surface', 'Sound effect', 'Whoosh, swoosh, swish', 'Door'];
+  const picked = pickClasses([0.1, 0.8, 0.9, 0.5, 0.29], classes);
+  // « Sound effect » est trop vague, « Door » et « Speech » ne sont pas assez sûrs.
+  assert.deepEqual(picked.map((c) => c.label), ['Rain on surface', 'Whoosh, swoosh, swish']);
+  assert.deepEqual(tagWords(picked), ['rain', 'surface', 'whoosh', 'swoosh', 'swish']);
+  assert.equal(frenchWord('rain'), 'pluie');
+  assert.equal(frenchWord('whoosh'), 'whoosh'); // pas dans le dictionnaire : gardé tel quel
+});
+
+test('sons similaires : empreintes compactes et comparaison', async () => {
+  const { packEmbedding, unpackEmbedding, similarity } = await import('../src/shared/sound-tags.mjs');
+  const sound = (seed) => Array.from({ length: 1024 }, (_, i) => Math.abs(Math.sin(i * seed)) + (i % 7 === 0 ? 1 : 0));
+  const a = packEmbedding(sound(1.3));
+  assert.equal(a.length, 172, '128 octets en base64');
+  const [va, vNear, vFar] = [a, packEmbedding(sound(1.3).map((v, i) => v + (i % 5) * 0.02)), packEmbedding(sound(2.9))].map(unpackEmbedding);
+  assert.ok(similarity(va, va) > 0.999);
+  assert.ok(similarity(va, vNear) > similarity(va, vFar), 'un son presque identique est plus proche qu\'un son différent');
+  assert.equal(packEmbedding(new Array(1024).fill(0)), null);
+  assert.equal(unpackEmbedding('pas une empreinte'), null);
+});

@@ -7,9 +7,11 @@ import { icon } from './icons.mjs';
 import { attachTooltip, hideTooltip } from './tooltip.mjs';
 import { drawPeaks, decodePeaks, queuePeaks } from './waveform.mjs';
 import { editDialog, creditFor } from './dialogs.mjs';
+import { cutDialog } from './cut-dialog.mjs';
 import { confirmDialog } from './modal.mjs';
 import { toast } from './toast.mjs';
 import { searchLibrary, indexItem } from '../../shared/search.mjs';
+import { unpackEmbedding, similarity } from '../../shared/sound-tags.mjs';
 import { MEDIA_KINDS, isPlayable } from '../../shared/media-kinds.mjs';
 
 const sono = window.sono;
@@ -29,6 +31,8 @@ export class LibraryView {
     this.cursor = -1;
     this.anchor = -1;
     this.indexCache = new WeakMap();
+    this.similarTo = null; // identifiant du son dont on affiche les « sons similaires »
+    this.embCache = new WeakMap();
 
     this.build(root);
     // Regroupe les mises à jour rapprochées (formes d'onde calculées en arrière-plan…).
@@ -143,6 +147,8 @@ export class LibraryView {
     const active = [];
     if (this.category) active.push([categoryLabel(this.category), () => { this.category = null; }]);
     if (this.favoritesOnly) active.push(['Favoris', () => { this.favoritesOnly = false; }]);
+    const ref = this.similarTo && this.store.items.get(this.similarTo);
+    if (ref) active.push([`Proches de « ${ref.name} »`, () => { this.similarTo = null; }]);
     if (this.sort !== 'relevance') active.push([`Tri : ${this.sortSel.selectedOptions[0].textContent.toLowerCase()}`, () => { this.sort = 'relevance'; this.sortSel.value = 'relevance'; }]);
     this.filterBtn.classList.toggle('has-active', active.length > 0);
     this.activeEl.hidden = !active.length && !this.query.trim();
@@ -156,6 +162,46 @@ export class LibraryView {
       }
     }
     this.activeEl.append(h('span', { class: 'spacer' }), this.count);
+  }
+
+  /** Empreinte sonore d'un son (calculée en arrière-plan par l'analyse automatique), ou null. */
+  embedding(item) {
+    if (!item.emb) return null;
+    let v = this.embCache.get(item);
+    if (v === undefined) {
+      v = unpackEmbedding(item.emb);
+      this.embCache.set(item, v);
+    }
+    return v;
+  }
+
+  /**
+   * Mode « sons similaires » : le son de référence en tête, puis les 30 sons de la liste qui
+   * lui ressemblent le plus à l'oreille. Sans référence, la liste est rendue telle quelle.
+   */
+  rankBySimilarity(list) {
+    const ref = this.similarTo && this.store.items.get(this.similarTo);
+    const target = ref && this.embedding(ref);
+    if (!target) {
+      this.similarTo = null;
+      return list;
+    }
+    const ranked = [];
+    for (const it of list) {
+      const v = it.id !== ref.id && this.embedding(it);
+      if (v) ranked.push([similarity(target, v), it]);
+    }
+    ranked.sort((a, b) => b[0] - a[0]);
+    return [ref, ...ranked.slice(0, 30).map(([, it]) => it)];
+  }
+
+  /** Affiche les sons de la bibliothèque qui ressemblent à celui-ci. */
+  showSimilar(id) {
+    this.category = null;
+    this.favoritesOnly = false;
+    this.similarTo = id;
+    this.setQuery('');
+    this.setCursor(0);
   }
 
   getIndex = (item) => {
@@ -177,6 +223,7 @@ export class LibraryView {
       sort: this.query.trim() ? this.sort : (this.sort === 'relevance' ? 'recent' : this.sort),
       getIndex: this.getIndex,
     });
+    this.results = this.rankBySimilarity(this.results);
     this.cursor = currentId ? this.results.findIndex((r) => r.id === currentId) : -1;
     for (const id of this.selected) if (!this.store.items.has(id)) this.selected.delete(id);
     this.renderCategoryChips();
@@ -392,6 +439,8 @@ export class LibraryView {
       duration: item.duration,
       actions: [
         h('button', { class: 'icon-btn', type: 'button', title: "Afficher le fichier dans l'Explorateur", onclick: () => sono.library.reveal(item.id) }, icon('folder', { size: 16 })),
+        h('button', { class: 'icon-btn', type: 'button', title: "Découper : ne garder qu'un passage de ce son", 'aria-label': 'Découper', onclick: () => cutDialog(item, { player: this.player }) }, icon('cut', { size: 16 })),
+        item.emb ? h('button', { class: 'btn btn-sm', type: 'button', title: 'Afficher les sons de ma bibliothèque qui ressemblent à celui-ci', onclick: () => this.ctx.showSimilar(item.id) }, icon('sparkles', { size: 14 }), 'Similaires') : null,
         credit ? h('button', { class: 'btn btn-sm', type: 'button', title: 'Copier la ligne de crédit', onclick: () => { sono.copy(credit); toast('Crédit copié.', 'ok'); } }, icon('copy', { size: 14 }), 'Crédit') : null,
       ].filter(Boolean),
     };
@@ -406,6 +455,7 @@ export class LibraryView {
 
   /** Affiche un son précis (filtres retirés) et le sélectionne. */
   reveal(id) {
+    this.similarTo = null;
     this.category = null;
     this.favoritesOnly = false;
     this.setQuery('');

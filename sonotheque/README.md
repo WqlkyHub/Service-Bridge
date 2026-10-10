@@ -4,9 +4,11 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 
 - **Tu stockes tes sons en local** dans un dossier de ton PC, rangés par catégorie.
 - **Tu les retrouves en 1 à 3 mots-clés**, en français ou en anglais : « pluie » trouve aussi un son tagué « rain ».
+- **L'appli écoute tes sons pour toi** : un modèle de reconnaissance, qui tourne sur ton PC sans rien envoyer, repère ce qu'on entend dans chaque son (pluie, porte, pas, chien…). Un fichier nommé `AUDIO_0012.wav` devient trouvable, et le bouton « Similaires » du lecteur affiche les sons de ta bibliothèque qui ressemblent à celui que tu écoutes.
 - **Tu les écoutes directement** : forme d'onde, boucle, et lecture automatique en naviguant avec ↑ ↓.
 - **Tu les glisses dans ta timeline** Premiere Pro ou DaVinci Resolve : il suffit de glisser la ligne.
-- **Tu cherches de nouveaux sons sur internet** dans 4 sources à la fois (Freesound, Openverse, Jamendo, Internet Archive). Tu les écoutes avant de les télécharger et tu les ajoutes en un clic, avec 1 à 3 mots-clés.
+- **Tu n'en gardes qu'un passage** : le bouton ciseaux du lecteur ouvre le tracé du son, tu choisis l'extrait à la souris et tu le glisses seul dans ta timeline.
+- **Tu cherches de nouveaux sons sur internet** dans 5 sources à la fois (Freesound, Openverse, Jamendo, Internet Archive, BBC Sound Effects). Tu les écoutes avant de les télécharger et tu les ajoutes en un clic, avec 1 à 3 mots-clés.
 - **Tu génères tes propres sons avec du code** (onglet « Générer ») : whoosh, impacts, montées, clics, bips, lasers, vent, pluie… Tu règles avec des curseurs, tu écoutes et tu ajoutes. C'est gratuit, sans compte, et libre de droits. Claude ou ChatGPT peuvent t'écrire de nouvelles « recettes » de sons.
 - **La source et la licence sont toujours visibles** sur chaque son, et une fiche complète s'ouvre depuis le bouton « infos » de la ligne : auteur, page d'origine, ce que la licence autorise.
 - **Filtre « Usage commercial »** pour tes vidéos monétisées ou tes clients. Le bouton « Copier les crédits » prépare le texte à coller dans la description de la vidéo.
@@ -90,7 +92,7 @@ Raccourcis : bouton ⌨ en haut à droite.
 
 ## Clés gratuites (Freesound et Jamendo)
 
-Openverse et Internet Archive marchent sans rien faire. Pour avoir beaucoup plus de bruitages (Freesound) et des musiques complètes (Jamendo), crée deux clés gratuites, puis colle-les dans ⚙ Réglages :
+Openverse, Internet Archive et BBC Sound Effects marchent sans rien faire. Attention : les sons de la BBC sont réservés à un usage non commercial (pastille rouge), le filtre « Usage commercial » les masque. Pour avoir beaucoup plus de bruitages (Freesound) et des musiques complètes (Jamendo), crée deux clés gratuites, puis colle-les dans ⚙ Réglages :
 
 | Source | Où | Quoi copier |
 |---|---|---|
@@ -167,9 +169,11 @@ Si tu choisis un **autre dossier** dans les Réglages, les sons déjà enregistr
   src/renderer/   interface (HTML/CSS/JS)
   src/shared/     code commun : mots-clés, dictionnaire FR↔EN, licences, recherche, types de médias
   src/synth/      moteur de génération (fenêtre isolée) + consigne pour les IA
+  src/ia/         reconnaissance des sons (fenêtre isolée) ; le modèle est dans src/ia/modele/
   src/recipes/    recettes de sons intégrées (.recette)
   ```
 - **Ajouter une source** : un fichier dans `src/main/sources/` qui exporte `{ id, label, kinds, search, download }`, puis une ligne dans `sources/index.mjs`.
 - **Enrichir le dictionnaire FR → EN** : `src/shared/synonyms.mjs`, une entrée par mot.
-- **Effets visuels (plus tard)** : voir [ROADMAP.md](ROADMAP.md).
+- **Reconnaissance des sons** : le modèle YAMNet (Google) et TensorFlow.js, tous deux sous licence Apache 2.0, sont téléchargés par `npm install` dans `src/ia/modele/` (17 Mo, hors du dépôt Git, empreintes vérifiées). `npm run ia` relance ce téléchargement. Sans eux, l'appli fonctionne, sans mots-clés automatiques ni sons similaires. L'option se coupe dans Réglages → Bibliothèque.
+- **La suite** : voir [ROADMAP.md](ROADMAP.md).
 - Sécurité : `contextIsolation` et `sandbox` activés, CSP stricte, aucun `innerHTML` avec des données venant d'internet. Les téléchargements se font uniquement en HTTPS, sont limités à 1 Go et vérifiés comme vrais fichiers audio. Les clés sont chiffrées avec `safeStorage`.

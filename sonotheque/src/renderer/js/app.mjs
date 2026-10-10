@@ -91,6 +91,10 @@ async function main() {
       switchTab('library');
       library.reveal(id);
     },
+    showSimilar: (id) => {
+      switchTab('library');
+      library.showSimilar(id);
+    },
     onLibraryChanged: (r) => {
       store.libraryRoot = r.library.root;
       store.setSettings(r.settings);

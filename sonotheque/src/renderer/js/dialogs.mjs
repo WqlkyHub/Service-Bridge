@@ -292,6 +292,7 @@ export function settingsDialog(ctx, { tab = 'library' } = {}) {
   const translate = h('input', { type: 'checkbox', checked: st.translateOnline });
   const commercial = h('input', { type: 'checkbox', checked: st.commercialOnly });
   const copyImport = h('input', { type: 'checkbox', checked: st.copyOnImport });
+  const autoTags = h('input', { type: 'checkbox', checked: st.autoTags !== false });
   const fsStatus = h('div', { class: 'fs-status' });
 
   const sourceToggles = {};
@@ -333,6 +334,7 @@ export function settingsDialog(ctx, { tab = 'library' } = {}) {
       translateOnline: translate.checked,
       commercialOnly: commercial.checked,
       copyOnImport: copyImport.checked,
+      autoTags: autoTags.checked,
       sources: Object.fromEntries(Object.entries(sourceToggles).map(([id, cb]) => [id, cb.checked])),
       freesound: { clientId: fsClient.value },
     };
@@ -363,7 +365,8 @@ export function settingsDialog(ctx, { tab = 'library' } = {}) {
         } }, 'Changer de dossier…')),
       h('p', { class: 'field-hint' }, 'Les nouveaux sons sont rangés dans ce dossier. Si tu en changes, les sons déjà enregistrés restent dans ta bibliothèque, là où ils sont : leur emplacement est indiqué sur chaque ligne.'),
       h('p', { class: 'field-hint' }, "L'index des mots-clés est dans ce dossier ; une sauvegarde est faite chaque jour (7 jours gardés)."),
-      h('label', { class: 'check' }, copyImport, ' À l\'import, copier les fichiers dans la bibliothèque (tes originaux restent intacts)')),
+      h('label', { class: 'check' }, copyImport, ' À l\'import, copier les fichiers dans la bibliothèque (tes originaux restent intacts)'),
+      h('label', { class: 'check' }, autoTags, " Reconnaître le contenu des sons pour mieux les retrouver (analyse faite sur ton PC, rien n'est envoyé)")),
 
     search: h('div', { class: 'settings-panel' },
       h('label', { class: 'check' }, translate, ' Traduire ma recherche en anglais (« pluie » → « rain ») : les banques de sons sont surtout en anglais'),

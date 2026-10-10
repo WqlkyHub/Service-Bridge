@@ -211,7 +211,7 @@ export function createLibrary(root) {
       const it = items.get(id);
       if (!it) return null;
       // Champs modifiables depuis l'interface uniquement.
-      const allowed = ['name', 'keywords', 'tags', 'category', 'favorite', 'peaks', 'playCount', 'notes', 'file'];
+      const allowed = ['name', 'keywords', 'tags', 'category', 'favorite', 'peaks', 'playCount', 'notes', 'file', 'analyzed', 'emb'];
       for (const k of allowed) if (k in patch) it[k] = patch[k];
       changed('update', [id]);
       return it;

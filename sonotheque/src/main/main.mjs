@@ -4,6 +4,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, safeStorage,
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 
 import { setFetch } from './http.mjs';
@@ -14,11 +15,13 @@ import { downloadToLibrary } from './downloader.mjs';
 import { SOURCES, getSource, describeSources } from './sources/index.mjs';
 import { connectFreesound, getFreesoundAccessToken } from './freesound-auth.mjs';
 import { createSynth, USER_RECIPES_DIR, BUILTIN_DIR } from './synth.mjs';
+import { createTagger, taggerAvailable, readClasses } from './tagger.mjs';
 import { readAudioInfo, quickHash } from './media-info.mjs';
 import { describeLicense } from '../shared/licenses.mjs';
 import { encodePeaks } from '../shared/peaks.mjs';
-import { cleanKeywords } from '../shared/keywords.mjs';
-import { MEDIA_KINDS } from '../shared/media-kinds.mjs';
+import { cleanKeywords, extraTags } from '../shared/keywords.mjs';
+import { MEDIA_KINDS, isPlayable } from '../shared/media-kinds.mjs';
+import { pickClasses, tagWords, frenchWord, packEmbedding } from '../shared/sound-tags.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RENDERER = path.join(__dirname, '..', 'renderer', 'index.html');
@@ -72,6 +75,8 @@ let settings;
 let library;
 let unsubscribeLibrary = null;
 let synth;
+let tagger = null; // reconnaissance des sons (absente si le modèle n'a pas été téléchargé)
+let soundClasses = [];
 // Résultats de recherche en ligne gardés côté principal : l'interface ne demande un
 // téléchargement que par identifiant, jamais avec une URL arbitraire.
 const resultCache = new Map();
@@ -91,7 +96,57 @@ function openLibrary(root) {
   unsubscribeLibrary = library.onChange(({ kind, ids }) => {
     if (kind === 'remove') send('lib:changed', { kind, ids });
     else send('lib:changed', { kind, items: ids.map((id) => library.get(id)).filter(Boolean) });
+    if (kind === 'add') tagLibrary();
   });
+  tagLibrary();
+}
+
+// ---------------------------------------------------------------------------
+// Mots-clés automatiques : en arrière-plan, un son à la fois, on écoute chaque son pas encore
+// analysé et on ajoute ce qui y est reconnu à ses tags (cherchables). Un son sans aucun
+// mot-clé reçoit aussi les trois premiers comme mots-clés.
+
+const MAX_TAG_BYTES = 80 * 1024 * 1024;
+const ANALYSIS_VERSION = 2; // à augmenter si l'analyse change : les sons seront réécoutés
+let tagging = false;
+const tagTried = new Set(); // fichiers illisibles pour l'instant : on réessaiera au prochain lancement
+
+async function tagLibrary() {
+  if (tagging || !tagger || settings.get().autoTags === false) return;
+  tagging = true;
+  try {
+    for (;;) {
+      const lib = library;
+      const it = lib.list().find((x) => x.analyzed !== ANALYSIS_VERSION && !tagTried.has(x.id) && isPlayable(x.kind, x.ext) && !(x.size > MAX_TAG_BYTES));
+      if (!it || settings.get().autoTags === false) break;
+      tagTried.add(it.id);
+      let bytes;
+      try {
+        bytes = await fs.promises.readFile(lib.absPath(it));
+      } catch {
+        continue; // fichier absent (disque débranché…)
+      }
+      let words = [];
+      let emb = null;
+      try {
+        const heard = await tagger.analyze(bytes);
+        words = tagWords(pickClasses(heard.scores, soundClasses));
+        emb = packEmbedding(heard.embedding);
+      } catch (err) {
+        if (!err.unreadable) break; // moteur arrêté ou bloqué : on reprendra plus tard
+        // sinon : format que le moteur ne sait pas décoder, on n'insiste pas sur ce son
+      }
+      const cur = lib.get(it.id);
+      if (!cur) continue; // supprimé entre-temps
+      const keywords = cur.keywords.length ? cur.keywords : cleanKeywords(words.map(frenchWord));
+      lib.update(it.id, { analyzed: ANALYSIS_VERSION, emb, keywords, tags: extraTags([...cur.tags, ...words], keywords) });
+      await new Promise((r) => setTimeout(r, 30));
+    }
+  } catch (err) {
+    logError('Mots-clés automatiques', err);
+  } finally {
+    tagging = false;
+  }
 }
 
 function cacheResult(r) {
@@ -227,7 +282,8 @@ function createWindow() {
   });
   mainWindow.on('closed', () => {
     mainWindow = null;
-    synth?.dispose(); // la fenêtre invisible de synthèse ne doit pas garder l'appli ouverte
+    synth?.dispose(); // les fenêtres invisibles ne doivent pas garder l'appli ouverte
+    tagger?.dispose();
   });
 }
 
@@ -389,7 +445,7 @@ function registerIpc() {
   // --- Réglages -------------------------------------------------------------
   ipcMain.handle('settings:update', (_e, patch) => {
     const p = {};
-    for (const k of ['copyOnImport', 'commercialOnly', 'translateOnline']) if (k in patch) p[k] = Boolean(patch[k]);
+    for (const k of ['copyOnImport', 'commercialOnly', 'translateOnline', 'autoTags']) if (k in patch) p[k] = Boolean(patch[k]);
     if ('volume' in patch) p.volume = Math.min(1, Math.max(0, Number(patch.volume) || 0));
     if (patch.sources) {
       p.sources = {};
@@ -404,6 +460,7 @@ function registerIpc() {
       p.jamendo = { clientId: patch.jamendo.clientId.trim() };
     }
     settings.update(p);
+    tagLibrary(); // au cas où les mots-clés automatiques viennent d'être activés
     return { settings: settings.publicView(), sources: describeSources(settings.get()) };
   });
 
@@ -515,6 +572,90 @@ function registerIpc() {
     };
   }));
 
+  // --- Découpe rapide : extraits d'un son -------------------------------------
+  // L'interface envoie l'extrait (un WAV) dès que le passage est choisi. Il attend dans le dossier
+  // temporaire ; il n'est rangé pour de bon que s'il est glissé dans un montage ou ajouté à la
+  // bibliothèque, car le logiciel de montage garde un lien vers le fichier déposé.
+  const extracts = new Map(); // jeton → { temp, itemId, kept }
+  const MAX_EXTRACT_BYTES = 400 * 1024 * 1024;
+  const MAX_PENDING_EXTRACTS = 6;
+
+  /** Rangement définitif d'un extrait dans <bibliothèque>/Sons/<catégorie>/. */
+  const keepExtract = (x) => {
+    if (x.kept && fs.existsSync(x.kept)) return x.kept;
+    const item = library.get(x.itemId);
+    const dir = library.folderFor('audio', item?.category ?? 'sfx');
+    x.kept = uniquePath(dir, safeFileName(`${item?.name ?? 'Son'} (extrait)`), 'wav');
+    fs.copyFileSync(x.temp, x.kept);
+    return x.kept;
+  };
+
+  ipcMain.handle('cut:prepare', safely(async ({ id, bytes }) => {
+    const item = library.get(String(id));
+    if (!item) throw new Error('Son introuvable dans la bibliothèque.');
+    if (!(bytes instanceof Uint8Array) || bytes.byteLength < 44 || bytes.byteLength > MAX_EXTRACT_BYTES
+      || Buffer.from(bytes.buffer, bytes.byteOffset, 4).toString('latin1') !== 'RIFF') {
+      throw new Error("L'extrait n'est pas un fichier audio valide.");
+    }
+    const dir = path.join(app.getPath('temp'), 'Sonotheque-extraits');
+    fs.mkdirSync(dir, { recursive: true });
+    const token = randomUUID();
+    const temp = path.join(dir, `${token}.wav`);
+    fs.writeFileSync(temp, bytes);
+    try {
+      await readAudioInfo(temp);
+    } catch {
+      fs.rmSync(temp, { force: true });
+      throw new Error("L'extrait n'est pas un fichier audio valide.");
+    }
+    extracts.set(token, { temp, itemId: item.id, kept: null });
+    while (extracts.size > MAX_PENDING_EXTRACTS) {
+      const [old, x] = extracts.entries().next().value;
+      fs.rmSync(x.temp, { force: true }); // seulement le brouillon : un extrait déjà rangé reste en place
+      extracts.delete(old);
+    }
+    return { token };
+  }));
+
+  ipcMain.on('cut:startDrag', (e, token) => {
+    const x = extracts.get(token);
+    if (!x || !fs.existsSync(x.temp)) return;
+    try {
+      const file = keepExtract(x);
+      e.sender.startDrag({ file, files: [file], icon: dragIcon() });
+    } catch (err) {
+      logError("Glisser d'un extrait", err);
+    }
+  });
+
+  ipcMain.handle('cut:save', safely(async ({ token }) => {
+    const x = extracts.get(token);
+    if (!x || !fs.existsSync(x.temp)) throw new Error('Extrait expiré : choisis de nouveau le passage.');
+    const original = library.get(x.itemId);
+    const file = keepExtract(x);
+    const existing = library.list().find((it) => library.absPath(it) === file);
+    if (existing) return { item: existing }; // déjà ajouté
+    const info = await readAudioInfo(file);
+    return {
+      item: library.add({
+        kind: 'audio',
+        category: original?.category ?? 'sfx',
+        name: path.basename(file, '.wav'),
+        file: library.storedPath(file),
+        ext: 'wav',
+        size: fs.statSync(file).size,
+        duration: info.duration,
+        sampleRate: info.sampleRate,
+        channels: info.channels,
+        keywords: original?.keywords ?? [],
+        tags: original?.tags ?? [],
+        hash: await quickHash(file),
+        // Même provenance et même licence que le son d'origine.
+        source: { ...(original?.source ?? { provider: 'local', providerLabel: 'Import local', license: describeLicense('own') }), extractOf: original?.name ?? null },
+      }),
+    };
+  }));
+
   // --- Divers ---------------------------------------------------------------
   ipcMain.handle('shell:open', (_e, url) => {
     if (typeof url === 'string' && /^https?:\/\//.test(url)) return shell.openExternal(url);
@@ -587,6 +728,11 @@ app.whenReady().then(() => {
       });
     }
     synth = createSynth();
+    if (taggerAvailable()) {
+      soundClasses = readClasses();
+      tagger = createTagger();
+      tagLibrary();
+    }
 
     protocol.handle(SCHEME, serveLibraryFile);
     if (app.isPackaged) Menu.setApplicationMenu(null);
@@ -610,6 +756,7 @@ app.whenReady().then(() => {
 app.on('before-quit', () => {
   library?.flush();
   synth?.dispose();
+  tagger?.dispose();
 });
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

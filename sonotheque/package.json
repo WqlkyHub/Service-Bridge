@@ -1,7 +1,7 @@
 {
   "name": "sonotheque",
   "productName": "Sonothèque",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Banque de sons locale (SFX, ambiances, musiques) avec recherche en ligne par mots-clés, pour le montage vidéo.",
   "main": "src/main/main.mjs",
   "type": "module",
@@ -10,6 +10,8 @@
   "scripts": {
     "start": "electron .",
     "test": "node --test \"test/*.test.mjs\"",
+    "ia": "node outils/telecharger-ia.cjs",
+    "postinstall": "node outils/telecharger-ia.cjs",
     "dist": "electron-builder --win nsis portable",
     "dist:dir": "electron-builder --win --dir"
   },

@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <!-- Fenêtre invisible de reconnaissance des sons : aucun accès réseau, aucun accès au disque.
+       « unsafe-eval » est demandé par TensorFlow.js ; c'est pour cela qu'il tourne ici, à l'écart. -->
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'none'; script-src 'self' 'unsafe-eval'; connect-src 'none'; img-src 'none'; media-src 'none'">
+  <title>Reconnaissance des sons</title>
+</head>
+<body>
+  <script src="modele/tf.min.js"></script>
+  <script src="ia-runtime.js"></script>
+</body>
+</html>

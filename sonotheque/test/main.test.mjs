@@ -14,6 +14,7 @@ import { parseOpenverse } from '../src/main/sources/openverse.mjs';
 import { parseFreesound, freesound } from '../src/main/sources/freesound.mjs';
 import { parseJamendo, jamendo } from '../src/main/sources/jamendo.mjs';
 import { parseArchiveDoc, applyArchiveMetadata } from '../src/main/sources/archive.mjs';
+import { parseBbc, bbc } from '../src/main/sources/bbc.mjs';
 
 /** Fabrique un petit WAV 16 bits mono (sinusoïde) en mémoire. */
 function makeWav(seconds = 0.5, freq = 440, rate = 8000) {
@@ -260,4 +261,22 @@ test('sources : lecture des réponses Freesound, Jamendo, Archive', async () => 
   assert.equal(resolved.license.level, 'free');
   assert.equal(resolved.duration, 3.5);
   assert.match(resolved.note, /2 fichiers audio/);
+});
+
+test('source BBC : lecture d\'un résultat, licence non commerciale, choix du fichier', async () => {
+  const r = parseBbc({
+    id: '07005210', description: 'Heavy rain, on turf and trees.', duration: 367922.744, tags: ['rain', 'turf'],
+    additionalMetadata: { cdName: 'Heavy Rain', recordist: 'David Tombs' }, fileSizes: { wavFileSize: '64902340', mp3FileSize: '5888353' },
+  });
+  assert.equal(r.key, 'bbc:07005210');
+  assert.equal(r.title, 'Heavy rain, on turf and trees.');
+  assert.equal(r.author, 'David Tombs');
+  assert.equal(r.license.label, 'BBC RemArc');
+  assert.equal(r.license.commercial, false, 'interdit en vidéo monétisée');
+  assert.ok(Math.abs(r.duration - 367.9) < 0.1);
+  assert.equal(r.previewUrl, 'https://sound-effects-media.bbcrewind.co.uk/mp3/07005210.mp3');
+  assert.equal((await bbc.download(r)).ext, 'wav');
+  assert.equal((await bbc.download({ raw: { id: 'x', wavBytes: 400 * 1024 * 1024 } })).ext, 'mp3', 'WAV trop gros : MP3');
+  // Filtre « usage commercial » : la BBC n'est même pas interrogée.
+  assert.deepEqual(await bbc.search({ query: 'rain', commercialOnly: true }), { items: [], total: 0, hasMore: false });
 });

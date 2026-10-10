@@ -423,6 +423,13 @@ input[type="range"]:hover::-webkit-slider-thumb { transform: scale(1.2); }
 .import-row .kw-suggestions:empty { display: none; }
 .import-row .select { height: 36px; }
 
+/* Découpe rapide */
+.cut-stage { position: relative; height: 150px; border-radius: 12px; background: var(--bg-input); cursor: crosshair; touch-action: none; overflow: hidden; }
+.cut-wave { width: 100%; height: 100%; display: block; }
+.cut-sel { position: absolute; top: 0; bottom: 0; pointer-events: none; background: color-mix(in srgb, var(--cat) 20%, transparent); border-left: 2px solid var(--ink); border-right: 2px solid var(--ink); }
+.cut-drag { cursor: grab; flex: none; }
+.cut-drag[aria-disabled="true"] { opacity: .35; pointer-events: none; }
+
 /* Réglages */
 .loc { flex: none; display: inline-flex; align-items: center; gap: 4px; color: var(--text-3); }
 .loc-missing { color: var(--red); }
