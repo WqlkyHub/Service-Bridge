@@ -42,6 +42,7 @@ contextBridge.exposeInMainWorld('sono', {
   settings: {
     update: (patch) => ipcRenderer.invoke('settings:update', patch),
     pickLibrary: () => ipcRenderer.invoke('settings:pickLibrary'),
+    keepLibrary: () => ipcRenderer.invoke('settings:keepLibrary'),
     connectFreesound: () => ipcRenderer.invoke('freesound:connect'),
     disconnectFreesound: () => ipcRenderer.invoke('freesound:disconnect'),
   },

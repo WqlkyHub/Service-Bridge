@@ -6,7 +6,7 @@ import { LibraryView } from './library-view.mjs';
 import { OnlineView } from './online-view.mjs';
 import { GenerateView } from './generate-view.mjs';
 import { icon } from './icons.mjs';
-import { importDialog, settingsDialog } from './dialogs.mjs';
+import { importDialog, settingsDialog, welcomeDialog } from './dialogs.mjs';
 import { isModalOpen } from './modal.mjs';
 import { toast } from './toast.mjs';
 import { hideTooltip } from './tooltip.mjs';
@@ -276,6 +276,7 @@ async function main() {
   switchTab('library');
   library.update();
   library.focusSearch();
+  if (data.firstRun) welcomeDialog(ctx);
 }
 
 function debounceSave(fn, ms) {

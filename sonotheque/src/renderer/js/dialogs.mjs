@@ -415,3 +415,38 @@ export function settingsDialog(ctx, { tab = 'library' } = {}) {
     ],
   });
 }
+
+// ---------------------------------------------------------------------------
+// Premier lancement : où ranger la bibliothèque ?
+
+export function welcomeDialog(ctx) {
+  const where = h('code', { class: 'path' }, ctx.store.libraryRoot);
+  openModal({
+    title: 'Bienvenue dans FoleyBox',
+    body: [
+      h('p', { class: 'modal-text' }, 'Où veux-tu ranger ta bibliothèque de sons ? Tes sons et leurs mots-clés seront enregistrés dans ce dossier :'),
+      h('div', {}, where),
+      h('p', { class: 'field-hint' }, 'Tu pourras en changer plus tard dans les Réglages.'),
+    ],
+    actions: [
+      {
+        label: 'Choisir un autre dossier…',
+        onClick: async () => {
+          const r = await sono.settings.pickLibrary();
+          if (!r) return false; // choix annulé : la question reste posée
+          ctx.onLibraryChanged(r);
+          return true;
+        },
+      },
+      {
+        label: 'Utiliser ce dossier',
+        primary: true,
+        onClick: async () => {
+          const r = await sono.settings.keepLibrary();
+          ctx.store.setSettings(r.settings);
+          return true;
+        },
+      },
+    ],
+  });
+}

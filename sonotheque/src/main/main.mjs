@@ -80,6 +80,7 @@ let settings;
 let library;
 let unsubscribeLibrary = null;
 let synth;
+let firstRun = false; // vrai tant que le dossier de la bibliothèque n'a pas été choisi
 let tagger = null; // reconnaissance des sons (absente si le modèle n'a pas été téléchargé)
 let soundClasses = [];
 // Résultats de recherche en ligne gardés côté principal : l'interface ne demande un
@@ -300,6 +301,7 @@ function registerIpc() {
     settings: settings.publicView(),
     sources: describeSources(settings.get()),
     library: { root: library.root, items: library.list() },
+    firstRun,
     platform: process.platform,
     version: app.getVersion(),
   }));
@@ -479,10 +481,23 @@ function registerIpc() {
     // Les sons déjà enregistrés suivent : ils restent où ils sont, avec leur chemin complet.
     // « managed » : fichier rangé par l'appli (et non un original importé sur place).
     const carried = library.list().map((it) => ({ ...it, file: library.absPath(it), managed: it.managed || !path.isAbsolute(it.file) }));
+    const previousRoot = library.root;
     openLibrary(res.filePaths[0]); // d'abord : si le dossier est inutilisable, les réglages ne changent pas
     library.adopt(carried);
     settings.update({ libraryPath: res.filePaths[0] });
+    firstRun = false;
+    // L'ancien dossier n'a jamais servi (premier lancement) : on ne laisse pas un dossier vide derrière.
+    try {
+      if (path.resolve(previousRoot) !== path.resolve(library.root) && !fs.readdirSync(previousRoot).length) fs.rmdirSync(previousRoot);
+    } catch { /* dossier absent ou non vide : on n'y touche pas */ }
     return { settings: settings.publicView(), library: { root: library.root, items: library.list() } };
+  });
+
+  /** Premier lancement : l'utilisateur garde le dossier proposé. */
+  ipcMain.handle('settings:keepLibrary', () => {
+    settings.update({ libraryPath: library.root });
+    firstRun = false;
+    return { settings: settings.publicView() };
   });
 
   ipcMain.handle('freesound:connect', async () => {
@@ -704,28 +719,24 @@ app.whenReady().then(() => {
     // Même chose pour la bibliothèque par défaut : celle de l'ancien nom est reprise si elle existe.
     const legacyLibrary = path.join(app.getPath('music'), 'Sonotheque');
     const defaultLibraryPath = fs.existsSync(path.join(legacyLibrary, INDEX_FILE)) ? legacyLibrary : path.join(app.getPath('music'), 'FoleyBox');
+    // Deuxième filet pour l'ancien nom : si l'appli démarre malgré tout dans un dossier de données
+    // neuf alors que d'anciens réglages existent, on les reprend (dossier de la bibliothèque,
+    // préférences ; les clés, chiffrées pour l'ancien dossier, seront à ressaisir).
+    const settingsFile = path.join(app.getPath('userData'), 'reglages.json');
+    const legacySettings = path.join(legacyData, 'reglages.json');
+    if (!process.env.SONOTHEQUE_DATA_DIR && !fs.existsSync(settingsFile) && fs.existsSync(legacySettings) && path.resolve(settingsFile) !== path.resolve(legacySettings)) {
+      fs.mkdirSync(path.dirname(settingsFile), { recursive: true });
+      fs.copyFileSync(legacySettings, settingsFile);
+    }
     settings = createSettingsStore({
-      file: path.join(app.getPath('userData'), 'reglages.json'),
+      file: settingsFile,
       defaultLibraryPath,
       crypto,
     });
-    if (settings.isNew) {
-      // Premier lancement : on demande où ranger la bibliothèque.
-      const choice = dialog.showMessageBoxSync({
-        type: 'question',
-        title: 'Bienvenue dans FoleyBox',
-        message: 'Où veux-tu ranger ta bibliothèque de sons ?',
-        detail: `Tes sons et leurs mots-clés seront enregistrés dans ce dossier.\n\nPar défaut : ${defaultLibraryPath}\n\nTu pourras en changer plus tard dans les Réglages.`,
-        buttons: ['Utiliser le dossier par défaut', 'Choisir un autre dossier…'],
-        defaultId: 0,
-        cancelId: 0,
-        noLink: true,
-      });
-      const picked = choice === 1
-        ? dialog.showOpenDialogSync({ title: 'Choisir le dossier de la bibliothèque', defaultPath: app.getPath('music'), properties: ['openDirectory', 'createDirectory'] })?.[0]
-        : null;
-      settings.update({ libraryPath: picked ?? defaultLibraryPath }); // enregistre : la question n'est posée qu'une fois
-    }
+    // Premier lancement : l'interface demandera où ranger la bibliothèque (voir « welcomeDialog »).
+    // Rien n'est demandé ici : une fenêtre de dialogue bloquante avant l'ouverture de l'appli
+    // laissait la fenêtre principale blanche.
+    firstRun = settings.isNew;
     try {
       openLibrary(settings.get().libraryPath);
     } catch (err) {

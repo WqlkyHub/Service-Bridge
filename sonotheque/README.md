@@ -153,7 +153,7 @@ FoleyBox\
   .sauvegardes\                    ← copie de l'index chaque jour (7 jours)
 ```
 
-Au premier lancement, l'appli te demande où ranger ta bibliothèque. Tu peux déplacer tout le dossier (disque externe, autre PC) : rien ne casse, il suffit de le rechoisir dans les Réglages.
+Au premier lancement, une fenêtre de bienvenue te demande où ranger ta bibliothèque. Tu peux déplacer tout le dossier (disque externe, autre PC) : rien ne casse, il suffit de le rechoisir dans les Réglages.
 
 Si tu choisis un **autre dossier** dans les Réglages, les sons déjà enregistrés restent dans ta bibliothèque, là où ils sont : seuls les nouveaux sons vont dans le nouveau dossier. Chaque ligne indique l'emplacement d'un son rangé ailleurs, et signale « Fichier introuvable » si le fichier a disparu (disque débranché, fichier déplacé).
 
