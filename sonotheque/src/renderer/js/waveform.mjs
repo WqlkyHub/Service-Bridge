@@ -147,13 +147,18 @@ export function drawStrings(canvas, { progress = 0, level = 0, time = 0, head = 
   g.strokeStyle = styles.getPropertyValue('--cat').trim() || '#24707a';
   g.lineCap = 'round';
   const gap = hgt / (STRINGS.length + 1);
+  // La barrette agit comme un doigt posé sur les cordes : elles sont immobiles derrière elle
+  // (partie déjà lue) et vibrent devant, entre la barrette et le bout droit. L'ampleur est
+  // bornée pour que les cordes restent dans la hauteur de la barrette.
+  const from = w * progress;
   const strings = () => STRINGS.forEach((s, i) => {
     const y = gap * (i + 1);
-    const amp = level * gap * 0.95 * Math.cos(time * s.speed + i);
+    const amp = level * gap * 0.8 * Math.cos(time * s.speed + i);
     g.lineWidth = s.width;
     g.beginPath();
     g.moveTo(0, y);
-    for (let x = 6; x <= w; x += 6) g.lineTo(x, y + amp * Math.sin((s.waves * Math.PI * x) / w));
+    g.lineTo(from, y);
+    for (let x = from + 6; x < w; x += 6) g.lineTo(x, y + amp * Math.sin((s.waves * Math.PI * (x - from)) / (w - from)));
     g.lineTo(w, y);
     g.stroke();
   });
@@ -171,7 +176,7 @@ export function drawStrings(canvas, { progress = 0, level = 0, time = 0, head = 
   if (head) {
     g.fillStyle = styles.getPropertyValue('--ink').trim() || '#1d2a2d';
     g.beginPath();
-    g.roundRect(Math.max(0, Math.min(w - 3, w * progress - 1.5)), gap * 0.45, 3, hgt - gap * 0.9, 1.5);
+    g.roundRect(Math.max(0, Math.min(w - 3, from - 1.5)), 0, 3, hgt, 1.5);
     g.fill();
   }
 }

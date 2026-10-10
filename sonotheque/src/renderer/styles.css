@@ -233,10 +233,9 @@ h2, h3 { font-family: var(--display); }
 .row-play .ico { margin-left: 1px; }
 .row:hover .row-play { transform: scale(1.08); }
 .row-playing .row-play { background: var(--cat); color: #fff; }
-.row-wave { width: 120px; height: 30px; transform-origin: 50% 100%; }
-/* Survoler un son le « pince » : ses crêtes rebondissent comme une corde. */
-.row:hover .row-wave { animation: pluck .5s ease-out; }
-@keyframes pluck { 0% { transform: scaleY(1); } 20% { transform: scaleY(1.32); } 45% { transform: scaleY(.82); } 70% { transform: scaleY(1.1); } 100% { transform: scaleY(1); } }
+.row-wave { width: 120px; height: 30px; transition: transform .25s ease; }
+/* Au survol, le paysage du son se soulève légèrement. */
+.row:hover .row-wave { transform: translateY(-3px); }
 .row-name { font-family: var(--display); font-size: 15px; }
 .row-main { min-width: 0; display: grid; gap: 4px; }
 .row-name { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
