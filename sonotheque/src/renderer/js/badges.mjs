@@ -56,7 +56,7 @@ export function sourceCard({ title, source, duration, size, quality, note, added
     h('div', { class: 'tip-badges' }, sourceBadge(source), licenseBadge(lic)),
     h('div', { class: ['tip-license', `lic-text-${info.color}`] }, info.help),
     row('Source', isLocal ? 'Importé depuis ton ordinateur'
-      : source?.provider === 'generated' ? `Généré par la Sonothèque (recette « ${source.recipe?.name ?? source.title} »)` : sourceName(source)),
+      : source?.provider === 'generated' ? `Généré par FoleyBox (recette « ${source.recipe?.name ?? source.title} »)` : sourceName(source)),
     row('Auteur', source?.author),
     row("Page d'origine", source?.pageUrl ? `${hostOf(source.pageUrl)} — ${source.pageUrl}` : null),
     row('Fichier d\'origine', isLocal ? source?.originalPath : null),

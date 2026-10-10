@@ -278,7 +278,7 @@ export class GenerateView {
       title: 'Ajouter le son généré',
       body: [
         h('div', { class: 'license-box' }, h('span', { class: 'badge lic-green' }, 'Créé par toi'),
-          h('span', {}, 'Son fabriqué par ta Sonothèque : utilisable partout, même en vidéo monétisée, sans créditer.')),
+          h('span', {}, 'Son fabriqué par FoleyBox : utilisable partout, même en vidéo monétisée, sans créditer.')),
         h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Mots-clés (1 à 3)'), kw.el),
         h('div', { class: 'field' }, h('span', { class: 'field-label' }, 'Catégorie'), seg),
         h('label', { class: 'field' }, h('span', { class: 'field-label' }, 'Nom'), name),

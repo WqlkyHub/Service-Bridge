@@ -1,4 +1,4 @@
-// Moteur de synthèse de la Sonothèque.
+// Moteur de synthèse de FoleyBox.
 // Il tourne dans une fenêtre invisible et isolée (pas d'accès au disque ni au réseau) et
 // exécute des « recettes » : de petits programmes qui fabriquent un son avec la Web Audio API.
 // Une recette s'écrit ainsi (voir src/recipes/ et le bouton « Consigne pour Claude / ChatGPT ») :

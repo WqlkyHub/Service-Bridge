@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { setFetch } from './http.mjs';
 import { createSettingsStore } from './settings.mjs';
-import { createLibrary, safeFileName, uniquePath } from './library.mjs';
+import { createLibrary, safeFileName, uniquePath, INDEX_FILE } from './library.mjs';
 import { analyzeFiles, importEntries } from './importer.mjs';
 import { downloadToLibrary } from './downloader.mjs';
 import { SOURCES, getSource, describeSources } from './sources/index.mjs';
@@ -55,7 +55,7 @@ function fatal(context, err) {
   try {
     where = `\n\nDétails enregistrés dans :\n${path.join(app.getPath('userData'), 'erreurs.log')}`;
   } catch { /* chemin indisponible */ }
-  dialog.showErrorBox('Sonothèque : erreur au démarrage', `${err?.message ?? err}${where}`);
+  dialog.showErrorBox('FoleyBox : erreur au démarrage', `${err?.message ?? err}${where}`);
   app.exit(1);
 }
 
@@ -63,7 +63,12 @@ process.on('uncaughtException', (err) => logError('Erreur non gérée', err));
 process.on('unhandledRejection', (err) => logError('Promesse rejetée', err));
 
 // Dossier de données séparé (tests automatiques, ou plusieurs profils).
+// L'appli s'appelait « Sonothèque ». Une installation existante garde son dossier de données :
+// les réglages y sont, et les clés y sont chiffrées avec un secret propre à ce dossier.
+const LEGACY_NAME = 'Sonothèque';
+const legacyData = path.join(app.getPath('appData'), LEGACY_NAME);
 if (process.env.SONOTHEQUE_DATA_DIR) app.setPath('userData', process.env.SONOTHEQUE_DATA_DIR);
+else if (fs.existsSync(legacyData) && !fs.existsSync(path.join(app.getPath('appData'), app.getName(), 'reglages.json'))) app.setPath('userData', legacyData);
 
 // Une seule instance : la deuxième s'arrête tout de suite, sans toucher à la bibliothèque.
 const isFirstInstance = app.requestSingleInstanceLock();
@@ -243,7 +248,7 @@ function createWindow() {
     height: 860,
     minWidth: 920,
     minHeight: 600,
-    title: 'Sonothèque',
+    title: 'FoleyBox',
     backgroundColor: '#e3ebea',
     show: false,
     autoHideMenuBar: true,
@@ -597,7 +602,7 @@ function registerIpc() {
       || Buffer.from(bytes.buffer, bytes.byteOffset, 4).toString('latin1') !== 'RIFF') {
       throw new Error("L'extrait n'est pas un fichier audio valide.");
     }
-    const dir = path.join(app.getPath('temp'), 'Sonotheque-extraits');
+    const dir = path.join(app.getPath('temp'), 'FoleyBox-extraits');
     fs.mkdirSync(dir, { recursive: true });
     const token = randomUUID();
     const temp = path.join(dir, `${token}.wav`);
@@ -617,12 +622,40 @@ function registerIpc() {
     return { token };
   }));
 
+  /** Ajoute un extrait rangé à la bibliothèque (une seule fois), avec la provenance du son d'origine. */
+  const addExtract = async (x) => {
+    const original = library.get(x.itemId);
+    const file = keepExtract(x);
+    const existing = library.list().find((it) => library.absPath(it) === file);
+    if (existing) return existing;
+    const info = await readAudioInfo(file);
+    return library.add({
+      kind: 'audio',
+      category: original?.category ?? 'sfx',
+      name: path.basename(file, '.wav'),
+      file: library.storedPath(file),
+      ext: 'wav',
+      size: fs.statSync(file).size,
+      duration: info.duration,
+      sampleRate: info.sampleRate,
+      channels: info.channels,
+      keywords: original?.keywords ?? [],
+      tags: original?.tags ?? [],
+      hash: await quickHash(file),
+      // Même provenance et même licence que le son d'origine.
+      source: { ...(original?.source ?? { provider: 'local', providerLabel: 'Import local', license: describeLicense('own') }), extractOf: original?.name ?? null },
+    });
+  };
+
   ipcMain.on('cut:startDrag', (e, token) => {
     const x = extracts.get(token);
     if (!x || !fs.existsSync(x.temp)) return;
     try {
       const file = keepExtract(x);
       e.sender.startDrag({ file, files: [file], icon: dragIcon() });
+      // Un extrait déposé dans un montage est aussi ajouté à la bibliothèque : sinon son fichier
+      // resterait dans le dossier des sons sans apparaître nulle part.
+      addExtract(x).catch((err) => logError("Ajout d'un extrait glissé", err));
     } catch (err) {
       logError("Glisser d'un extrait", err);
     }
@@ -631,29 +664,7 @@ function registerIpc() {
   ipcMain.handle('cut:save', safely(async ({ token }) => {
     const x = extracts.get(token);
     if (!x || !fs.existsSync(x.temp)) throw new Error('Extrait expiré : choisis de nouveau le passage.');
-    const original = library.get(x.itemId);
-    const file = keepExtract(x);
-    const existing = library.list().find((it) => library.absPath(it) === file);
-    if (existing) return { item: existing }; // déjà ajouté
-    const info = await readAudioInfo(file);
-    return {
-      item: library.add({
-        kind: 'audio',
-        category: original?.category ?? 'sfx',
-        name: path.basename(file, '.wav'),
-        file: library.storedPath(file),
-        ext: 'wav',
-        size: fs.statSync(file).size,
-        duration: info.duration,
-        sampleRate: info.sampleRate,
-        channels: info.channels,
-        keywords: original?.keywords ?? [],
-        tags: original?.tags ?? [],
-        hash: await quickHash(file),
-        // Même provenance et même licence que le son d'origine.
-        source: { ...(original?.source ?? { provider: 'local', providerLabel: 'Import local', license: describeLicense('own') }), extractOf: original?.name ?? null },
-      }),
-    };
+    return { item: await addExtract(x) };
   }));
 
   // --- Divers ---------------------------------------------------------------
@@ -670,7 +681,7 @@ function registerIpc() {
 // ---------------------------------------------------------------------------
 // Démarrage
 
-// Le nom « Sonothèque » (avec accent) se retrouverait dans l'en-tête User-Agent, qui doit
+// Un nom d'appli accentué (l'ancien « Sonothèque ») se retrouverait dans l'en-tête User-Agent, qui doit
 // rester en ASCII : sinon la lecture des fichiers locaux échoue.
 app.userAgentFallback = app.userAgentFallback
   .normalize('NFD')
@@ -690,7 +701,9 @@ app.whenReady().then(() => {
           decrypt: (s) => safeStorage.decryptString(Buffer.from(s, 'base64')),
         }
       : null;
-    const defaultLibraryPath = path.join(app.getPath('music'), 'Sonotheque');
+    // Même chose pour la bibliothèque par défaut : celle de l'ancien nom est reprise si elle existe.
+    const legacyLibrary = path.join(app.getPath('music'), 'Sonotheque');
+    const defaultLibraryPath = fs.existsSync(path.join(legacyLibrary, INDEX_FILE)) ? legacyLibrary : path.join(app.getPath('music'), 'FoleyBox');
     settings = createSettingsStore({
       file: path.join(app.getPath('userData'), 'reglages.json'),
       defaultLibraryPath,
@@ -700,7 +713,7 @@ app.whenReady().then(() => {
       // Premier lancement : on demande où ranger la bibliothèque.
       const choice = dialog.showMessageBoxSync({
         type: 'question',
-        title: 'Bienvenue dans la Sonothèque',
+        title: 'Bienvenue dans FoleyBox',
         message: 'Où veux-tu ranger ta bibliothèque de sons ?',
         detail: `Tes sons et leurs mots-clés seront enregistrés dans ce dossier.\n\nPar défaut : ${defaultLibraryPath}\n\nTu pourras en changer plus tard dans les Réglages.`,
         buttons: ['Utiliser le dossier par défaut', 'Choisir un autre dossier…'],
@@ -722,9 +735,9 @@ app.whenReady().then(() => {
       openLibrary(defaultLibraryPath);
       dialog.showMessageBox({
         type: 'warning',
-        title: 'Sonothèque',
+        title: 'FoleyBox',
         message: 'Bibliothèque introuvable',
-        detail: `Le dossier ${settings.get().libraryPath} est inaccessible (disque débranché ?).\n\nLa bibliothèque par défaut est ouverte à la place. Rebranche le disque puis relance la Sonothèque pour retrouver tes sons.`,
+        detail: `Le dossier ${settings.get().libraryPath} est inaccessible (disque débranché ?).\n\nLa bibliothèque par défaut est ouverte à la place. Rebranche le disque puis relance FoleyBox pour retrouver tes sons.`,
       });
     }
     synth = createSynth();

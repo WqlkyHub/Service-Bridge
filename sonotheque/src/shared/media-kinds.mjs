@@ -1,4 +1,4 @@
-// Types de médias gérés par la Sonothèque, et catégories de chaque type.
+// Types de médias gérés par FoleyBox, et catégories de chaque type.
 //
 // Aujourd'hui seul « audio » est actif. Pour ajouter plus tard les effets visuels (overlays,
 // transitions, textures vidéo…), il suffira d'ajouter une entrée ici (ex. « visual »), des

@@ -1,7 +1,7 @@
 {
-  "name": "sonotheque",
-  "productName": "Sonothèque",
-  "version": "0.3.0",
+  "name": "foleybox",
+  "productName": "FoleyBox",
+  "version": "0.4.0",
   "description": "Banque de sons locale (SFX, ambiances, musiques) avec recherche en ligne par mots-clés, pour le montage vidéo.",
   "main": "src/main/main.mjs",
   "type": "module",
@@ -24,7 +24,7 @@
   },
   "build": {
     "appId": "fr.sonotheque.app",
-    "productName": "Sonothèque",
+    "productName": "FoleyBox",
     "files": [
       "src/**/*",
       "package.json"
@@ -36,18 +36,18 @@
       "icon": "build/icon.png"
     },
     "nsis": {
-      "artifactName": "Sonotheque-Setup-${version}.${ext}",
+      "artifactName": "FoleyBox-Setup-${version}.${ext}",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": "always",
       "createStartMenuShortcut": true,
-      "shortcutName": "Sonothèque",
-      "uninstallDisplayName": "Sonothèque",
+      "shortcutName": "FoleyBox",
+      "uninstallDisplayName": "FoleyBox",
       "deleteAppDataOnUninstall": false
     },
     "portable": {
-      "artifactName": "Sonotheque-Portable-${version}.${ext}"
+      "artifactName": "FoleyBox-Portable-${version}.${ext}"
     }
   }
 }

@@ -61,7 +61,7 @@ export async function cutDialog(item, { player }) {
   const status = h('span', { class: 'gen-status' }, 'Chargement du son…');
   const handle = h('div', {
     class: 'btn btn-primary cut-drag', draggable: 'true', 'aria-disabled': 'true',
-    title: 'Glisse ce bouton dans Premiere Pro ou DaVinci Resolve : seul le passage choisi est déposé',
+    title: "Glisse ce bouton dans Premiere Pro ou DaVinci Resolve : seul le passage choisi est déposé, et l'extrait est ajouté à ta bibliothèque",
   }, icon('download', { size: 16 }), "Glisser l'extrait dans le montage");
 
   let audio = null; // son décodé

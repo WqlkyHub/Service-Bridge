@@ -1,4 +1,4 @@
-# Sonothèque
+# FoleyBox
 
 Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 
@@ -23,14 +23,16 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 
 ### Installer l'application
 
-1. Récupère **`Sonotheque-Setup-<version>.exe`** : dans le dossier `dist/` du PC qui l'a fabriqué (copie-le sur une clé USB ou dans un cloud), ou dans les **Releases** du dépôt GitHub (voir plus bas).
-2. Double-clique dessus et suis l'assistant. Aucun droit administrateur n'est demandé : l'appli s'installe pour ton compte Windows, dans `%LOCALAPPDATA%\Programs\sonotheque`.
+1. Récupère **`FoleyBox-Setup-<version>.exe`** : dans le dossier `dist/` du PC qui l'a fabriqué (copie-le sur une clé USB ou dans un cloud), ou dans les **Releases** du dépôt GitHub (voir plus bas).
+2. Double-clique dessus et suis l'assistant. Aucun droit administrateur n'est demandé : l'appli s'installe pour ton compte Windows, dans `%LOCALAPPDATA%\Programs\foleybox`.
    - Si Windows affiche « Windows a protégé votre ordinateur » : « Informations complémentaires » → « Exécuter quand même ». Ce message s'affiche parce que l'installateur n'est pas signé numériquement : c'est normal pour un logiciel perso.
-3. La Sonothèque apparaît sur le Bureau et dans le menu Démarrer. Pour la désinstaller : Paramètres → Applications → Sonothèque.
+3. FoleyBox apparaît sur le Bureau et dans le menu Démarrer. Pour la désinstaller : Paramètres → Applications → FoleyBox.
 
-Variante sans installation : **`Sonotheque-Portable-<version>.exe`** se lance directement, par exemple depuis une clé USB.
+Variante sans installation : **`FoleyBox-Portable-<version>.exe`** se lance directement, par exemple depuis une clé USB.
 
-Ta bibliothèque (`Musique\Sonotheque`) et tes réglages (`%APPDATA%\Sonothèque`) sont conservés lors d'une mise à jour ou d'une désinstallation. Si quelque chose ne va pas, les erreurs sont enregistrées dans `%APPDATA%\Sonothèque\erreurs.log`.
+Ta bibliothèque (`Musique\FoleyBox`) et tes réglages (`%APPDATA%\FoleyBox`) sont conservés lors d'une mise à jour ou d'une désinstallation. Si quelque chose ne va pas, les erreurs sont enregistrées dans `%APPDATA%\FoleyBox\erreurs.log`.
+
+Si tu utilisais l'appli sous son ancien nom, « Sonothèque », rien ne bouge : elle garde ton dossier de réglages et ta bibliothèque d'origine, et le nouvel installateur remplace l'ancienne version.
 
 ### Modifier le code et refabriquer l'installateur
 
@@ -56,10 +58,10 @@ L'icône (`build/icon.png`) est dessinée par `outils/generer-icone.cjs` : modif
 
 ### Fabrication automatique sur GitHub
 
-Le fichier `.github/workflows/sonotheque-windows.yml` (à la racine du dépôt) fabrique l'installateur sur les serveurs de GitHub, sans rien installer chez toi :
+Le fichier `.github/workflows/foleybox-windows.yml` (à la racine du dépôt) fabrique l'installateur sur les serveurs de GitHub, sans rien installer chez toi :
 
-- **à la main** : onglet **Actions** → « Sonothèque : installateur Windows » → **Run workflow**. Les `.exe` sont ensuite téléchargeables en bas de la page de l'exécution (« Artifacts ») ;
-- **en publiant une version** : crée un tag `sonotheque-v0.2.0` (même numéro que dans `package.json`). Une **Release** est créée avec les deux `.exe` à télécharger.
+- **à la main** : onglet **Actions** → « FoleyBox : installateur Windows » → **Run workflow**. Les `.exe` sont ensuite téléchargeables en bas de la page de l'exécution (« Artifacts ») ;
+- **en publiant une version** : crée un tag `foleybox-v0.4.0` (même numéro que dans `package.json`). Une **Release** est créée avec les deux `.exe` à télécharger.
 
 ---
 
@@ -107,14 +109,14 @@ Tes clés sont chiffrées sur ton PC (coffre de Windows) et ne sont envoyées qu
 
 ## Générer des sons avec Claude ou ChatGPT
 
-La Sonothèque fabrique des sons avec du code : ce sont des **recettes**, de petits programmes qui décrivent un son. 18 recettes sont incluses. Tu peux en créer autant que tu veux avec ton IA habituelle, **sans connecter ton compte** :
+FoleyBox fabrique des sons avec du code : ce sont des **recettes**, de petits programmes qui décrivent un son. 18 recettes sont incluses. Tu peux en créer autant que tu veux avec ton IA habituelle, **sans connecter ton compte** :
 
 1. Onglet « Générer » → **« Consigne pour Claude / ChatGPT »** : un mode d'emploi est copié.
 2. Colle-le dans Claude (claude.ai ou Claude Code) ou ChatGPT, et décris ton son (« un vaisseau spatial qui passe au loin »).
 3. Copie le code de la réponse → **« Coller une recette »** → *Tester* → *Enregistrer*.
 4. Le son ne te plaît pas ? Demande à l'IA de le corriger (« plus grave », « plus long ») et recolle le code. En cas d'erreur, l'appli affiche un message à recopier à l'IA.
 
-Tes recettes sont rangées dans `Sonotheque\Recettes\` (fichiers `.recette`). Elles tournent dans une fenêtre invisible et isolée : pas d'accès à tes fichiers ni à internet. Une recette qui boucle à l'infini est arrêtée au bout de 30 secondes.
+Tes recettes sont rangées dans `FoleyBox\Recettes\` (fichiers `.recette`). Elles tournent dans une fenêtre invisible et isolée : pas d'accès à tes fichiers ni à internet. Une recette qui boucle à l'infini est arrêtée au bout de 30 secondes.
 
 > Pourquoi pas un bouton « Se connecter à Claude / ChatGPT » ? Claude et Codex écrivent du texte et du code, mais ne produisent pas de son eux-mêmes. Et Anthropic n'autorise pas une autre application à utiliser la connexion d'un abonnement Claude. Passer par ta conversation reste gratuit, autorisé et tout aussi rapide.
 >
@@ -141,10 +143,10 @@ Le bouton **Usage commercial** (en haut) masque les 🔴 et les ⚪. Pour les �
 
 ## Où sont mes fichiers ?
 
-Par défaut dans `Musique\Sonotheque` (modifiable dans les Réglages) :
+Par défaut dans `Musique\FoleyBox` (modifiable dans les Réglages) :
 
 ```
-Sonotheque\
+FoleyBox\
   Sons\Bruitage\…      Sons\Ambiance\…      Sons\Musique\…      Sons\Voix\…
   Recettes\                        ← tes recettes de sons (.recette)
   sonotheque-bibliotheque.json     ← mots-clés, sources, licences
@@ -175,5 +177,6 @@ Si tu choisis un **autre dossier** dans les Réglages, les sons déjà enregistr
 - **Ajouter une source** : un fichier dans `src/main/sources/` qui exporte `{ id, label, kinds, search, download }`, puis une ligne dans `sources/index.mjs`.
 - **Enrichir le dictionnaire FR → EN** : `src/shared/synonyms.mjs`, une entrée par mot.
 - **Reconnaissance des sons** : le modèle YAMNet (Google) et TensorFlow.js, tous deux sous licence Apache 2.0, sont téléchargés par `npm install` dans `src/ia/modele/` (17 Mo, hors du dépôt Git, empreintes vérifiées). `npm run ia` relance ce téléchargement. Sans eux, l'appli fonctionne, sans mots-clés automatiques ni sons similaires. L'option se coupe dans Réglages → Bibliothèque.
+- **Ancien nom** : l'appli s'appelait « Sonothèque ». Le dossier du code (`sonotheque/`), l'identifiant `fr.sonotheque.app` et le fichier d'index gardent ce nom exprès : c'est ce qui permet au nouvel installateur de remplacer une ancienne version et de relire les bibliothèques existantes.
 - **La suite** : voir [ROADMAP.md](ROADMAP.md).
 - Sécurité : `contextIsolation` et `sandbox` activés, CSP stricte, aucun `innerHTML` avec des données venant d'internet. Les téléchargements se font uniquement en HTTPS, sont limités à 1 Go et vérifiés comme vrais fichiers audio. Les clés sont chiffrées avec `safeStorage`.

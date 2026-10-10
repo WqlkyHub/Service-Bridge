@@ -1,4 +1,4 @@
-Tu vas m'écrire une « recette » de son pour mon logiciel Sonothèque. Une recette est un petit programme JavaScript qui fabrique un effet sonore avec la Web Audio API (rendu hors ligne, OfflineAudioContext, 44,1 kHz, stéréo).
+Tu vas m'écrire une « recette » de son pour mon logiciel FoleyBox. Une recette est un petit programme JavaScript qui fabrique un effet sonore avec la Web Audio API (rendu hors ligne, OfflineAudioContext, 44,1 kHz, stéréo).
 
 LE SON QUE JE VEUX : [décris ici ton son, ex. « une porte de vaisseau spatial qui s'ouvre avec un sifflement d'air »]
 

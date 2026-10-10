@@ -1,8 +1,10 @@
 # Feuille de route
 
-La Sonothèque est destinée à d'autres monteurs que son auteur. L'ordre ci-dessous a été fixé en octobre 2026.
+FoleyBox est destinée à d'autres monteurs que son auteur. L'ordre ci-dessous a été fixé en octobre 2026.
 
-## Fait depuis la 0.2.0 (pas encore publié)
+## Fait récemment
+
+- **Nouveau nom : FoleyBox.** L'appli s'appelait « Sonothèque » ; les réglages et la bibliothèque d'une installation existante sont repris tels quels.
 
 - **Mots-clés automatiques** : chaque son est écouté par un modèle de reconnaissance qui tourne sur le PC. Ce qu'il y entend (pluie, porte, pas…) devient cherchable, et un son sans aucun mot-clé (« AUDIO_0012.wav ») reçoit les siens.
 - **Sons similaires** : pendant l'écoute d'un son de la bibliothèque, le bouton « Similaires » affiche ceux qui lui ressemblent à l'oreille.
@@ -14,18 +16,15 @@ La Sonothèque est destinée à d'autres monteurs que son auteur. L'ordre ci-des
 - **Sons similaires en ligne**, via Freesound (demande une clé Freesound) : remis à plus tard.
 
 
-## Ensuite
-
-1. **LUTs et presets pour DaVinci Resolve et Premiere Pro** (remplace l'ancien projet « effets visuels »).
-   - LUTs (`.cube`, lus par les deux logiciels) : les ranger, les prévisualiser sur une image, les installer dans le dossier du logiciel, en générer avec des curseurs. Reste à voir s'il existe une source en ligne aux licences claires.
-   - Presets : les ranger et les installer. Ils sont propres à chaque logiciel et ne peuvent pas être prévisualisés par l'appli.
-   - Ce qui est déjà générique dans le code : le champ `kind` de chaque élément (`src/shared/media-kinds.mjs`), la recherche, les mots-clés, les licences et le glisser-déposer.
-
 ## Avant une vraie publication
 
 - Prévenir quand une nouvelle version existe, et l'installer sans passer par GitHub.
 - Signer l'installateur, pour supprimer l'avertissement de Windows.
 - Vérifier à la main : la question du premier lancement, le changement de dossier de la bibliothèque, et le glisser d'un extrait vers Premiere Pro et DaVinci Resolve.
+
+## Écarté pour l'instant
+
+- **LUTs et presets pour DaVinci Resolve et Premiere Pro.** Décidé en octobre 2026 : l'appli reste une banque de sons. Il existe une source de LUTs en CC0 (freshluts.com), mais sans interface officielle, et les autres sources ont des licences floues.
 
 ## Idées non décidées
 

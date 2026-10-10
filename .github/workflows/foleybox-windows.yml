@@ -1,11 +1,11 @@
-# Fabrique l'installateur Windows de la Sonothèque (.exe).
+# Fabrique l'installateur Windows de FoleyBox (.exe). Le code est dans le dossier « sonotheque », l'ancien nom de l'appli.
 # - Manuellement (onglet Actions → « Run workflow ») : les .exe sont disponibles en « Artifacts ».
-# - À chaque tag « sonotheque-v* » (ex. sonotheque-v0.2.0) : crée une Release avec les .exe à télécharger.
-name: "Sonothèque : installateur Windows"
+# - À chaque tag « foleybox-v* » (ex. foleybox-v0.4.0) : crée une Release avec les .exe à télécharger.
+name: "FoleyBox : installateur Windows"
 
 on:
   push:
-    tags: ['sonotheque-v*']
+    tags: ['foleybox-v*']
   workflow_dispatch:
 
 permissions:
@@ -30,10 +30,10 @@ jobs:
       - run: npx electron-builder --win nsis portable --publish never
       - uses: actions/upload-artifact@v4
         with:
-          name: sonotheque-windows
+          name: foleybox-windows
           path: sonotheque/dist/*.exe
-      - if: startsWith(github.ref, 'refs/tags/sonotheque-v')
+      - if: startsWith(github.ref, 'refs/tags/foleybox-v')
         uses: softprops/action-gh-release@v2
         with:
-          name: Sonothèque ${{ github.ref_name }}
+          name: FoleyBox ${{ github.ref_name }}
           files: sonotheque/dist/*.exe
