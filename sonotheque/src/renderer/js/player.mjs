@@ -19,7 +19,7 @@ export class Player extends Emitter {
     this.btn = h('button', { class: 'pl-play', title: 'Lecture / pause (Espace)', 'aria-label': 'Lecture', onclick: () => this.toggle() });
     this.title = h('div', { class: 'pl-title' }, 'Aucun son sélectionné');
     this.sub = h('div', { class: 'pl-sub' }, 'Clique sur ▶ ou utilise les flèches ↑ ↓ pour écouter.');
-    this.canvas = h('canvas', { class: 'pl-wave', title: 'Clique pour te déplacer dans le son' });
+    this.canvas = h('canvas', { class: 'pl-wave', title: 'Clique ou glisse pour te déplacer dans le son' });
     this.time = h('div', { class: 'pl-time' }, '0:00 / 0:00');
     this.loopBtn = h('button', { class: 'icon-btn', title: 'Lecture en boucle (L)', 'aria-pressed': 'false', onclick: () => this.setLoop(!this.audio.loop) }, icon('loop', { size: 18 }));
     this.autoBtn = h('button', {
@@ -53,12 +53,31 @@ export class Player extends Emitter {
     );
     this.renderButton();
 
-    this.canvas.addEventListener('click', (e) => {
-      if (!this.entry || !Number.isFinite(this.audio.duration)) return;
+    // Se déplacer dans le son : la tête de lecture suit la souris pendant tout le glissement,
+    // pas seulement au relâchement.
+    let scrubbing = false;
+    const seek = (e) => {
       const r = this.canvas.getBoundingClientRect();
-      this.audio.currentTime = ((e.clientX - r.left) / r.width) * this.audio.duration;
-      if (this.audio.paused) this.audio.play().catch(() => {});
+      this.audio.currentTime = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * this.audio.duration;
+      this.drawProgress();
+    };
+    this.canvas.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || !this.entry || !Number.isFinite(this.audio.duration)) return;
+      scrubbing = true;
+      // Capture : le glissement continue même si la souris sort de la barre.
+      try { this.canvas.setPointerCapture(e.pointerId); } catch { /* pointeur déjà relâché */ }
+      seek(e);
     });
+    this.canvas.addEventListener('pointermove', (e) => {
+      if (scrubbing) seek(e);
+    });
+    const release = () => {
+      if (!scrubbing) return;
+      scrubbing = false;
+      if (this.audio.paused) this.audio.play().catch(() => {});
+    };
+    this.canvas.addEventListener('pointerup', release);
+    this.canvas.addEventListener('pointercancel', release);
 
     const a = this.audio;
     a.addEventListener('play', () => this.changed());
