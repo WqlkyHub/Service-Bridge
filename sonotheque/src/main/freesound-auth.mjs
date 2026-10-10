@@ -40,6 +40,8 @@ export function connectFreesound({ clientId, apiKey, parent }) {
       autoHideMenuBar: true,
       webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false, partition: 'freesound-auth' },
     });
+    // Page distante : aucune autorisation web (caméra, position, notifications…).
+    win.webContents.session.setPermissionRequestHandler((_wc, _permission, cb) => cb(false));
     let done = false;
 
     const check = async (navUrl) => {

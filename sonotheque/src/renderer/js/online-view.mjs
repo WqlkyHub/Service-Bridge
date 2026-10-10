@@ -391,7 +391,9 @@ export class OnlineView {
       this.refreshKey(r.key);
       return;
     }
-    const updated = this.replaceResult({ ...r, inLibrary: res.item.id });
+    // Version la plus récente du résultat (il a pu être complété pendant le téléchargement).
+    const latest = this.results.find((x) => x.key === r.key) ?? r;
+    const updated = this.replaceResult({ ...latest, inLibrary: res.item.id });
     this.player.setActions(`web:${r.key}`, this.playerActions(updated));
     toast(res.already ? 'Ce son est déjà dans ta bibliothèque.' : `Ajouté : « ${res.item.name} » (${res.item.keywords.join(', ')})`, 'ok');
   }

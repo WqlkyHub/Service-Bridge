@@ -8,6 +8,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { safeFileName } from './library.mjs';
+import { MEDIA_KINDS } from '../shared/media-kinds.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SYNTH_HTML = path.join(__dirname, '..', 'synth', 'synth.html');
@@ -18,6 +19,50 @@ const RECIPE_EXT = /\.recette(\.txt)?$/i;
 const MAX_RECIPE_BYTES = 200 * 1024;
 const RENDER_TIMEOUT_MS = 30_000;
 const KEPT_RENDERS = 8;
+
+const MAX_WAV_BYTES = 64 * 1024 * 1024; // un rendu de 130 s en stéréo 16 bits pèse ~23 Mo
+
+// La fenêtre de synthèse exécute du code collé par l'utilisateur : ses réponses ne sont pas
+// fiables. On ne garde que des valeurs simples, de taille bornée, avant de s'en servir.
+const str = (v, max) => (typeof v === 'string' || typeof v === 'number' ? String(v).slice(0, max) : '');
+const num = (v, fallback) => (Number.isFinite(Number(v)) ? Number(v) : fallback);
+
+export function cleanMeta(m) {
+  if (!m || typeof m !== 'object') throw new Error('Réponse invalide du moteur de synthèse.');
+  const params = Object.entries(m.params && typeof m.params === 'object' ? m.params : {}).slice(0, 40)
+    .filter(([, d]) => d && typeof d === 'object')
+    .map(([k, d]) => {
+      const label = str(d.label, 60) || k.slice(0, 60);
+      if (d.type === 'choice' && Array.isArray(d.options) && d.options.length) {
+        const options = d.options.slice(0, 40).map((o) => ({ value: str(o?.value, 60), label: str(o?.label, 60) }));
+        return [k, { type: 'choice', label, options, default: str(d.default, 60) }];
+      }
+      const min = num(d.min, 0);
+      const max = Math.max(num(d.max, 1), min);
+      return [k, { type: 'range', label, min, max, step: num(d.step, 0.01), unit: str(d.unit, 12), default: Math.min(max, Math.max(min, num(d.default, min))) }];
+    });
+  return {
+    name: str(m.name, 60) || 'Sans nom',
+    description: str(m.description, 200),
+    category: Object.hasOwn(MEDIA_KINDS.audio.categories, m.category) ? m.category : 'sfx',
+    keywords: (Array.isArray(m.keywords) ? m.keywords : []).slice(0, 6).map((k) => str(k, 40)).filter(Boolean),
+    params: Object.fromEntries(params),
+  };
+}
+
+export function cleanRender(out) {
+  const wav = out?.wav instanceof ArrayBuffer ? new Uint8Array(out.wav) : ArrayBuffer.isView(out?.wav) ? out.wav : null;
+  if (!wav || wav.byteLength < 44 || wav.byteLength > MAX_WAV_BYTES
+    || Buffer.from(wav.buffer, wav.byteOffset, 4).toString('latin1') !== 'RIFF') {
+    throw new Error('Le moteur de synthèse a renvoyé un son invalide.');
+  }
+  return {
+    wav: out.wav,
+    meta: cleanMeta(out.meta),
+    peaks: (Array.isArray(out.peaks) ? out.peaks : []).slice(0, 200).map((p) => Math.min(1, Math.max(0, num(p, 0)))),
+    duration: Math.max(0, num(out.duration, 0)),
+  };
+}
 
 /** Liste les fichiers de recettes (intégrées + celles de l'utilisateur). */
 export function listRecipeFiles(userDir) {
@@ -110,9 +155,16 @@ export function createSynth() {
       const files = listRecipeFiles(userDir);
       if (!files.length) return [];
       const res = await call({ type: 'describe', items: files.map(({ key, code }) => ({ key, code })) });
+      const results = Array.isArray(res.results) ? res.results : [];
       return files.map((f) => {
-        const r = res.results.find((x) => x.key === f.key) ?? {};
-        return { key: f.key, builtIn: f.builtIn, file: path.basename(f.file), meta: r.meta ?? null, error: r.error ?? null };
+        const r = results.find((x) => x?.key === f.key) ?? {};
+        const base = { key: f.key, builtIn: f.builtIn, file: path.basename(f.file) };
+        try {
+          if (r.error || !r.meta) return { ...base, meta: null, error: str(r.error, 500) || 'Recette illisible.' };
+          return { ...base, meta: cleanMeta(r.meta), error: null };
+        } catch (err) {
+          return { ...base, meta: null, error: err.message };
+        }
       });
     },
 
@@ -120,10 +172,10 @@ export function createSynth() {
     async test(code) {
       const key = `test:${randomUUID()}`;
       const res = await call({ type: 'describe', items: [{ key, code }] });
-      const r = res.results[0];
-      if (r.error) throw new Error(r.error);
+      const r = res.results?.[0];
+      if (!r || r.error) throw new Error(str(r?.error, 500) || 'Recette illisible.');
       const out = await call({ type: 'render', key, code, values: {}, seed: 1 });
-      return { meta: r.meta, ...this.keep(out, { key, code, values: {}, seed: 1 }) };
+      return this.keep(out, { key, code, values: {}, seed: 1 });
     },
 
     async render(userDir, key, values, seed) {
@@ -135,10 +187,11 @@ export function createSynth() {
 
     /** Garde le rendu côté principal ; l'interface ne reçoit qu'un identifiant + l'aperçu. */
     keep(out, info) {
+      const clean = cleanRender(out);
       const renderId = randomUUID();
-      renders.set(renderId, { wav: out.wav, meta: out.meta, peaks: out.peaks, duration: out.duration, ...info });
+      renders.set(renderId, { ...clean, ...info });
       while (renders.size > KEPT_RENDERS) renders.delete(renders.keys().next().value);
-      return { renderId, wav: out.wav, peaks: out.peaks, duration: out.duration, meta: out.meta };
+      return { renderId, ...clean };
     },
 
     getRender(renderId) {

@@ -62,6 +62,10 @@ export function licenseCode(input) {
   const m = s.match(/licenses\/([a-z-]+)\//) || s.match(/licenses\/([a-z-]+)$/);
   let code = m ? m[1] : s;
 
+  // Une adresse qui n'est pas une licence Creative Commons reconnue reste « à vérifier » :
+  // on ne devine pas une licence d'après des mots trouvés dans une URL quelconque.
+  if (!m && /^https?:/.test(s)) return 'unknown';
+
   // Noms en toutes lettres (Freesound, Archive…)
   if (!m) {
     const hasBy = /attribution|\bby\b/.test(code);

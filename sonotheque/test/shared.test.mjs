@@ -57,6 +57,8 @@ test('licences : codes et niveaux', () => {
   assert.equal(licenseCode('by'), 'by');
   assert.equal(licenseCode(''), 'unknown');
   assert.equal(licenseCode('n\'importe quoi'), 'unknown');
+  // Une adresse quelconque contenant « by » n'est pas une licence CC BY.
+  assert.equal(licenseCode('https://example.org/terms/by/author'), 'unknown');
 
   const by = describeLicense('by', { version: '4.0', url: 'https://creativecommons.org/licenses/by/4.0/' });
   assert.equal(by.label, 'CC BY 4.0');

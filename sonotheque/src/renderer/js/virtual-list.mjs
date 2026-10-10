@@ -21,7 +21,7 @@ export class VirtualList {
     container.append(this.spacer);
     this.rendered = new Map(); // index -> élément
     container.addEventListener('scroll', () => this.paint(), { passive: true });
-    new ResizeObserver(() => this.paint()).observe(container);
+    new ResizeObserver(() => requestAnimationFrame(() => this.paint())).observe(container);
   }
 
   setItems(items, { keepScroll = false } = {}) {

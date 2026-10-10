@@ -69,7 +69,9 @@ export class Player extends Emitter {
         : 'Lecture impossible (fichier déplacé ou supprimé, ou format non lu par le lecteur intégré).';
       this.changed();
     });
-    new ResizeObserver(() => this.drawProgress()).observe(this.canvas);
+    // Dessin reporté à l'image suivante : redessiner tout de suite change la mise en page
+    // (texte du temps) et déclenche l'erreur « ResizeObserver loop ».
+    new ResizeObserver(() => requestAnimationFrame(() => this.drawProgress())).observe(this.canvas);
   }
 
   get playing() {

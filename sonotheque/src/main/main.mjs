@@ -1,6 +1,6 @@
 // Processus principal d'Electron : fenêtre, accès disque, réseau et dialogue avec l'interface.
 
-import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, safeStorage, nativeImage, clipboard, Menu } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, protocol, net, safeStorage, nativeImage, clipboard, Menu, session } from 'electron';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
@@ -37,8 +37,11 @@ function logError(context, err) {
   const text = `[${new Date().toISOString()}] ${context}\n${err?.stack ?? err}\n\n`;
   try {
     const dir = app.getPath('userData');
+    const file = path.join(dir, 'erreurs.log');
     fs.mkdirSync(dir, { recursive: true });
-    fs.appendFileSync(path.join(dir, 'erreurs.log'), text);
+    // Le journal ne grossit pas sans fin : au-delà de 1 Mo, on repart de zéro.
+    if (fs.statSync(file, { throwIfNoEntry: false })?.size > 1024 * 1024) fs.rmSync(file, { force: true });
+    fs.appendFileSync(file, text);
   } catch { /* rien de plus à faire */ }
   console.error(text);
 }
@@ -59,7 +62,9 @@ process.on('unhandledRejection', (err) => logError('Promesse rejetée', err));
 // Dossier de données séparé (tests automatiques, ou plusieurs profils).
 if (process.env.SONOTHEQUE_DATA_DIR) app.setPath('userData', process.env.SONOTHEQUE_DATA_DIR);
 
-if (!app.requestSingleInstanceLock()) app.quit();
+// Une seule instance : la deuxième s'arrête tout de suite, sans toucher à la bibliothèque.
+const isFirstInstance = app.requestSingleInstanceLock();
+if (!isFirstInstance) app.quit();
 
 /** @type {BrowserWindow|null} */
 let mainWindow = null;
@@ -215,8 +220,10 @@ function createWindow() {
     if (/^https?:\/\//.test(url)) shell.openExternal(url);
     return { action: 'deny' };
   });
+  // L'interface tient sur une seule page : toute navigation ailleurs est refusée (un autre
+  // fichier local chargé ici aurait accès au pont « sono »).
   mainWindow.webContents.on('will-navigate', (e, url) => {
-    if (!url.startsWith('file://')) e.preventDefault();
+    if (url !== mainWindow.webContents.getURL()) e.preventDefault();
   });
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -390,8 +397,8 @@ function registerIpc() {
       properties: ['openDirectory', 'createDirectory'],
     });
     if (res.canceled || !res.filePaths[0]) return null;
+    openLibrary(res.filePaths[0]); // d'abord : si le dossier est inutilisable, les réglages ne changent pas
     settings.update({ libraryPath: res.filePaths[0] });
-    openLibrary(res.filePaths[0]);
     return { settings: settings.publicView(), library: { root: library.root, items: library.list() } };
   });
 
@@ -453,7 +460,13 @@ function registerIpc() {
     const title = String(name ?? '').slice(0, 200).trim() || r.meta.name;
     const dest = uniquePath(dir, safeFileName(title), 'wav');
     fs.writeFileSync(dest, Buffer.from(r.wav));
-    const info = await readAudioInfo(dest);
+    let info;
+    try {
+      info = await readAudioInfo(dest);
+    } catch {
+      fs.rmSync(dest, { force: true });
+      throw new Error("Le son généré n'est pas un audio valide.");
+    }
     const kws = cleanKeywords(keywords);
     return {
       item: library.add({
@@ -503,8 +516,11 @@ app.userAgentFallback = app.userAgentFallback
   .replace(/[^\x20-\x7e]/g, '');
 
 app.whenReady().then(() => {
+  if (!isFirstInstance) return;
   try {
     setFetch((url, opts) => net.fetch(url, opts));
+    // L'appli n'a besoin d'aucune autorisation web (micro, caméra, position, notifications…).
+    session.defaultSession.setPermissionRequestHandler((_wc, _permission, cb) => cb(false));
 
     const crypto = safeStorage.isEncryptionAvailable()
       ? {
@@ -512,12 +528,26 @@ app.whenReady().then(() => {
           decrypt: (s) => safeStorage.decryptString(Buffer.from(s, 'base64')),
         }
       : null;
+    const defaultLibraryPath = path.join(app.getPath('music'), 'Sonotheque');
     settings = createSettingsStore({
       file: path.join(app.getPath('userData'), 'reglages.json'),
-      defaultLibraryPath: path.join(app.getPath('music'), 'Sonotheque'),
+      defaultLibraryPath,
       crypto,
     });
-    openLibrary(settings.get().libraryPath);
+    try {
+      openLibrary(settings.get().libraryPath);
+    } catch (err) {
+      // Bibliothèque sur un disque débranché, par exemple : on ouvre celle par défaut sans
+      // toucher aux réglages, pour retrouver la bonne au prochain lancement.
+      logError('Bibliothèque inaccessible', err);
+      openLibrary(defaultLibraryPath);
+      dialog.showMessageBox({
+        type: 'warning',
+        title: 'Sonothèque',
+        message: 'Bibliothèque introuvable',
+        detail: `Le dossier ${settings.get().libraryPath} est inaccessible (disque débranché ?).\n\nLa bibliothèque par défaut est ouverte à la place. Rebranche le disque puis relance la Sonothèque pour retrouver tes sons.`,
+      });
+    }
     synth = createSynth();
 
     protocol.handle(SCHEME, serveLibraryFile);

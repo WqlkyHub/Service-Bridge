@@ -30,8 +30,14 @@ export function openModal({ title, body, actions = [], size = '', onClose } = {}
       type: 'button',
       onclick: async () => {
         if (b.disabled) return;
-        const res = await a.onClick?.();
-        if (res !== false) close();
+        // Bouton bloqué pendant l'action : un double clic ne lance pas deux imports.
+        b.disabled = true;
+        try {
+          const res = await a.onClick?.();
+          if (res !== false) close();
+        } finally {
+          b.disabled = false;
+        }
       },
     }, a.label);
     if (a.primary) b.dataset.primary = '1';

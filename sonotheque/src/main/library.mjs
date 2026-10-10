@@ -50,22 +50,40 @@ export function createLibrary(root) {
   load();
   backupIfNeeded();
 
+  /** Lit un fichier d'index ; les entrées incomplètes (fichier modifié à la main…) sont ignorées. */
+  function readIndex(file) {
+    const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+    items.clear();
+    for (const it of data.items ?? []) {
+      if (!it || typeof it.id !== 'string' || typeof it.file !== 'string') continue;
+      items.set(it.id, {
+        ...it,
+        name: String(it.name ?? path.basename(it.file)),
+        keywords: Array.isArray(it.keywords) ? it.keywords.map(String) : [],
+        tags: Array.isArray(it.tags) ? it.tags.map(String) : [],
+      });
+    }
+  }
+
   function load() {
     items.clear();
     if (!fs.existsSync(indexPath)) return;
     try {
-      const data = JSON.parse(fs.readFileSync(indexPath, 'utf8'));
-      for (const it of data.items ?? []) items.set(it.id, it);
+      readIndex(indexPath);
     } catch (err) {
-      // Index abîmé : on le met de côté plutôt que de l'écraser, et on repart de la dernière sauvegarde.
+      // Index abîmé : on le met de côté plutôt que de l'écraser, et on repart de la sauvegarde
+      // lisible la plus récente.
       const broken = `${indexPath}.abime-${Date.now()}`;
       fs.copyFileSync(indexPath, broken);
-      const last = latestBackup();
-      if (last) {
-        const data = JSON.parse(fs.readFileSync(last, 'utf8'));
-        for (const it of data.items ?? []) items.set(it.id, it);
+      for (const backup of backups().reverse()) {
+        try {
+          readIndex(backup);
+          break;
+        } catch { /* sauvegarde abîmée elle aussi : on essaie la précédente */ }
       }
       console.error(`Index illisible, copie dans ${broken}`, err.message);
+      // Index réparé tout de suite, sinon la sauvegarde du jour copierait le fichier abîmé.
+      writeNow();
     }
   }
 
@@ -73,12 +91,12 @@ export function createLibrary(root) {
     return path.join(root, BACKUP_DIR);
   }
 
-  function latestBackup() {
+  /** Sauvegardes de l'index, de la plus ancienne à la plus récente. */
+  function backups() {
     try {
-      const files = fs.readdirSync(backupDir()).filter((f) => f.endsWith('.json')).sort();
-      return files.length ? path.join(backupDir(), files.at(-1)) : null;
+      return fs.readdirSync(backupDir()).filter((f) => f.endsWith('.json')).sort().map((f) => path.join(backupDir(), f));
     } catch {
-      return null;
+      return [];
     }
   }
 

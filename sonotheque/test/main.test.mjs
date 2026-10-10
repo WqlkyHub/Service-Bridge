@@ -107,6 +107,26 @@ test('index abîmé : mis de côté, la bibliothèque repart de la sauvegarde', 
     console.error = orig;
   }
   assert.ok(fs.readdirSync(root).some((f) => f.includes('.abime-')));
+  // L'index est réparé tout de suite (sinon la sauvegarde du jour copierait le fichier abîmé).
+  assert.equal(JSON.parse(fs.readFileSync(path.join(root, INDEX_FILE), 'utf8')).items.length, 1);
+});
+
+test('index et sauvegarde abîmés, entrées incomplètes : la bibliothèque s\'ouvre quand même', () => {
+  const root = tmpDir('broken2');
+  fs.mkdirSync(path.join(root, '.sauvegardes'), { recursive: true });
+  fs.writeFileSync(path.join(root, '.sauvegardes', 'bibliotheque-2026-01-01.json'),
+    JSON.stringify({ items: [{ id: 'ok', file: 'Sons/a.wav' }, { id: 'sans-fichier' }, null] }));
+  fs.writeFileSync(path.join(root, '.sauvegardes', 'bibliotheque-2026-01-02.json'), '{ abîmée aussi');
+  fs.writeFileSync(path.join(root, INDEX_FILE), '{ abîmé');
+  const orig = console.error;
+  console.error = () => {};
+  try {
+    const lib = createLibrary(root);
+    assert.deepEqual(lib.list().map((i) => i.id), ['ok']);
+    assert.deepEqual(lib.get('ok').keywords, []);
+  } finally {
+    console.error = orig;
+  }
 });
 
 function fakeFetch(routes) {
@@ -153,6 +173,10 @@ test('téléchargement : refuse HTTP, page HTML et faux audio', async () => {
   }));
   await assert.rejects(fetchToFile('http://x.org/a.mp3', root, 'a'), /HTTPS/);
   await assert.rejects(fetchToFile('https://x.org/page', root, 'a'), /page web/);
+  // Une redirection qui finit sur une adresse HTTP est refusée elle aussi.
+  setFetch(async () => Object.defineProperty(new Response(makeWav(), { headers: { 'content-type': 'audio/wav' } }), 'url', { value: 'http://x.org/a.wav' }));
+  await assert.rejects(fetchToFile('https://x.org/redirige', root, 'a'), /non sécurisée/);
+  setFetch(fakeFetch({ 'https://x.org/fake.mp3': { body: 'nope nope nope', headers: { 'content-type': 'audio/mpeg' } } }));
   const result = parseOpenverse({ id: 'z', title: 'Fake', url: 'https://x.org/fake.mp3', license: 'cc0', license_url: 'https://creativecommons.org/publicdomain/zero/1.0/' });
   await assert.rejects(downloadToLibrary(result, { url: 'https://x.org/fake.mp3', ext: 'mp3' }, { keywords: ['x'], category: 'sfx' }, lib), /pas un audio valide/);
   const leftovers = fs.readdirSync(path.join(root, 'Sons', 'Bruitage'));
