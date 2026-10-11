@@ -7,8 +7,9 @@ import { freesound } from './freesound.mjs';
 import { jamendo } from './jamendo.mjs';
 import { archive } from './archive.mjs';
 import { bbc } from './bbc.mjs';
+import { youtube } from './youtube.mjs';
 
-export const SOURCES = [freesound, openverse, jamendo, archive, bbc];
+export const SOURCES = [freesound, openverse, jamendo, archive, bbc, youtube];
 
 export function getSource(id) {
   const s = SOURCES.find((x) => x.id === id);

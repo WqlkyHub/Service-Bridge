@@ -32,7 +32,7 @@ function peaksOf(audio) {
 }
 
 /** Extrait [from, to[ (en échantillons) → fichier WAV 16 bits, avec un fondu de 2 ms à chaque bout. */
-function encodeWav(audio, from, to) {
+export function encodeWav(audio, from, to) {
   const n = to - from;
   const chans = audio.numberOfChannels;
   const view = new DataView(new ArrayBuffer(44 + n * chans * 2));

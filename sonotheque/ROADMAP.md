@@ -9,6 +9,8 @@ FoleyBox est destinée à d'autres monteurs que son auteur. L'ordre ci-dessous a
 - **Mots-clés automatiques** : chaque son est écouté par un modèle de reconnaissance qui tourne sur le PC. Ce qu'il y entend (pluie, porte, pas…) devient cherchable, et un son sans aucun mot-clé (« AUDIO_0012.wav ») reçoit les siens.
 - **Sons similaires** : pendant l'écoute d'un son de la bibliothèque, le bouton « Similaires » affiche ceux qui lui ressemblent à l'oreille.
 - **Nouvelle source : BBC Sound Effects**, 33 000 bruitages et ambiances, en usage non commercial uniquement.
+- **Nouvelle source : YouTube** : piste audio des vidéos de moins de 10 minutes, convertie en WAV. Licence « inconnue », sauf vidéos Creative Commons. L'outil yt-dlp est téléchargé à la première recherche.
+- **Pub de 30 secondes** en motion design (`pub/`, la vidéo se fabrique avec `npx electron pub/rendre.cjs`).
 - **Découpe rapide** : le bouton ciseaux du lecteur ouvre le tracé du son ; on y choisit un passage, on l'écoute en boucle, puis on le glisse seul dans la timeline ou on l'ajoute à la bibliothèque.
 
 ## En cours : mieux trouver

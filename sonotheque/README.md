@@ -8,7 +8,7 @@ Ta banque de sons perso pour le montage vidéo : bruitages, ambiances, musiques.
 - **Tu les écoutes directement** : forme d'onde, boucle, et lecture automatique en naviguant avec ↑ ↓.
 - **Tu les glisses dans ta timeline** Premiere Pro ou DaVinci Resolve : il suffit de glisser la ligne.
 - **Tu n'en gardes qu'un passage** : le bouton ciseaux du lecteur ouvre le tracé du son, tu choisis l'extrait à la souris et tu le glisses seul dans ta timeline.
-- **Tu cherches de nouveaux sons sur internet** dans 5 sources à la fois (Freesound, Openverse, Jamendo, Internet Archive, BBC Sound Effects). Tu les écoutes avant de les télécharger et tu les ajoutes en un clic, avec 1 à 3 mots-clés.
+- **Tu cherches de nouveaux sons sur internet** dans 6 sources à la fois (Freesound, Openverse, Jamendo, Internet Archive, BBC Sound Effects, YouTube). Tu les écoutes avant de les télécharger et tu les ajoutes en un clic, avec 1 à 3 mots-clés.
 - **Tu génères tes propres sons avec du code** (onglet « Générer ») : whoosh, impacts, montées, clics, bips, lasers, vent, pluie… Tu règles avec des curseurs, tu écoutes et tu ajoutes. C'est gratuit, sans compte, et libre de droits. Claude ou ChatGPT peuvent t'écrire de nouvelles « recettes » de sons.
 - **La source et la licence sont toujours visibles** sur chaque son, et une fiche complète s'ouvre depuis le bouton « infos » de la ligne : auteur, page d'origine, ce que la licence autorise.
 - **Filtre « Usage commercial »** pour tes vidéos monétisées ou tes clients. Le bouton « Copier les crédits » prépare le texte à coller dans la description de la vidéo.
@@ -94,7 +94,11 @@ Raccourcis : bouton ⌨ en haut à droite.
 
 ## Clés gratuites (Freesound et Jamendo)
 
-Openverse, Internet Archive et BBC Sound Effects marchent sans rien faire. Attention : les sons de la BBC sont réservés à un usage non commercial (pastille rouge), le filtre « Usage commercial » les masque. Pour avoir beaucoup plus de bruitages (Freesound) et des musiques complètes (Jamendo), crée deux clés gratuites, puis colle-les dans ⚙ Réglages :
+Openverse, Internet Archive et BBC Sound Effects marchent sans rien faire. Attention : les sons de la BBC sont réservés à un usage non commercial (pastille rouge), le filtre « Usage commercial » les masque. 
+
+**YouTube** marche aussi sans clé : l'appli récupère la piste audio des vidéos de moins de 10 minutes et la convertit en WAV. À la première recherche, elle télécharge pour ça l'outil libre [yt-dlp](https://github.com/yt-dlp/yt-dlp) (18 Mo, empreinte vérifiée) dans son dossier de données, et le met à jour toute seule quand YouTube change. Attention : télécharger depuis YouTube est contraire à ses conditions d'utilisation, et la plupart des vidéos sont protégées par le droit d'auteur. Ces sons portent donc la pastille grise « Inconnue » et le filtre « Usage commercial » ne garde que les vidéos publiées en Creative Commons par leur auteur. C'est à toi de vérifier les droits avant de publier. La source se coupe dans ⚙ Réglages → Recherche.
+
+Pour avoir beaucoup plus de bruitages (Freesound) et des musiques complètes (Jamendo), crée deux clés gratuites, puis colle-les dans ⚙ Réglages :
 
 | Source | Où | Quoi copier |
 |---|---|---|

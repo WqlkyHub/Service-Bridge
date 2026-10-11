@@ -15,6 +15,7 @@ import { parseFreesound, freesound } from '../src/main/sources/freesound.mjs';
 import { parseJamendo, jamendo } from '../src/main/sources/jamendo.mjs';
 import { parseArchiveDoc, applyArchiveMetadata } from '../src/main/sources/archive.mjs';
 import { parseBbc, bbc } from '../src/main/sources/bbc.mjs';
+import { parseYoutube, MAX_SECONDS } from '../src/main/sources/youtube.mjs';
 
 /** Fabrique un petit WAV 16 bits mono (sinusoïde) en mémoire. */
 function makeWav(seconds = 0.5, freq = 440, rate = 8000) {
@@ -261,6 +262,19 @@ test('sources : lecture des réponses Freesound, Jamendo, Archive', async () => 
   assert.equal(resolved.license.level, 'free');
   assert.equal(resolved.duration, 3.5);
   assert.match(resolved.note, /2 fichiers audio/);
+});
+
+test('source YouTube : licence inconnue par défaut, vidéos longues et directs écartés', () => {
+  const e = { id: 'yO2ldAd78Yc', title: 'Door Slam', channel: 'Sound FX', duration: 5 };
+  const r = parseYoutube(e);
+  assert.equal(r.key, 'youtube:yO2ldAd78Yc');
+  assert.equal(r.pageUrl, 'https://www.youtube.com/watch?v=yO2ldAd78Yc');
+  assert.equal(r.license.level, 'unknown');
+  assert.equal(r.needsResolve, true, "l'adresse d'écoute est demandée au moment de l'écoute");
+  assert.equal(parseYoutube(e, true).license.commercial, true, 'recherche limitée aux vidéos Creative Commons');
+  assert.equal(parseYoutube({ ...e, duration: MAX_SECONDS + 1 }), null);
+  assert.equal(parseYoutube({ ...e, duration: null }), null, 'direct');
+  assert.equal(parseYoutube({ ...e, id: '--exec=calc' }), null, 'identifiant douteux');
 });
 
 test('source BBC : lecture d\'un résultat, licence non commerciale, choix du fichier', async () => {

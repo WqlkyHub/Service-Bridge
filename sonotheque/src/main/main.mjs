@@ -11,7 +11,8 @@ import { setFetch } from './http.mjs';
 import { createSettingsStore } from './settings.mjs';
 import { createLibrary, safeFileName, uniquePath, INDEX_FILE } from './library.mjs';
 import { analyzeFiles, importEntries } from './importer.mjs';
-import { downloadToLibrary } from './downloader.mjs';
+import { downloadToLibrary, addDownloaded } from './downloader.mjs';
+import { setToolsDir } from './ytdlp.mjs';
 import { SOURCES, getSource, describeSources } from './sources/index.mjs';
 import { connectFreesound, getFreesoundAccessToken } from './freesound-auth.mjs';
 import { createSynth, USER_RECIPES_DIR, BUILTIN_DIR } from './synth.mjs';
@@ -419,6 +420,12 @@ function registerIpc() {
     }
   });
 
+  const choiceOf = ({ keywords, category, name }) => ({
+    keywords: cleanKeywords(keywords),
+    category: MEDIA_KINDS.audio.categories[category] ? category : 'sfx',
+    name: String(name ?? '').slice(0, 200).trim(),
+  });
+
   ipcMain.handle('online:download', async (_e, { key, keywords, category, name }) => {
     let r = resultCache.get(key);
     if (!r) return { error: 'Résultat expiré, relance la recherche.' };
@@ -432,18 +439,36 @@ function registerIpc() {
       }
       if (r.downloadable === false) throw new Error("Cette source n'autorise pas le téléchargement de ce son.");
       const plan = await source.download(r, { getAccessToken: () => getFreesoundAccessToken(settings) });
-      const item = await downloadToLibrary(
-        r,
-        plan,
-        {
-          keywords: cleanKeywords(keywords),
-          category: MEDIA_KINDS.audio.categories[category] ? category : 'sfx',
-          name: String(name ?? '').slice(0, 200).trim(),
-        },
-        library,
-        { onProgress: (received, total) => send('download:progress', { key, received, total }) },
-      );
-      return { item };
+      const onProgress = (received, total) => send('download:progress', { key, received, total });
+      if (plan.convert) {
+        // Fichier à convertir (YouTube) : l'interface le décode, le réécrit en WAV et le renvoie
+        // par « online:saveWav ».
+        const dir = path.join(app.getPath('temp'), 'FoleyBox-conversion', randomUUID());
+        try {
+          return { convert: fs.readFileSync(await plan.save(dir, { onProgress })) };
+        } finally {
+          fs.rmSync(dir, { recursive: true, force: true });
+        }
+      }
+      return { item: await downloadToLibrary(r, plan, choiceOf({ keywords, category, name }), library, { onProgress }) };
+    } catch (err) {
+      return { error: err.message };
+    }
+  });
+
+  ipcMain.handle('online:saveWav', async (_e, { key, bytes, keywords, category, name }) => {
+    const r = resultCache.get(key);
+    if (!r) return { error: 'Résultat expiré, relance la recherche.' };
+    try {
+      if (!(bytes instanceof Uint8Array) || bytes.byteLength < 44 || bytes.byteLength > MAX_EXTRACT_BYTES
+        || Buffer.from(bytes.buffer, bytes.byteOffset, 4).toString('latin1') !== 'RIFF') {
+        throw new Error("La conversion n'a pas produit un fichier audio valide.");
+      }
+      const choice = choiceOf({ keywords, category, name });
+      const dest = uniquePath(library.folderFor(r.kind, choice.category), safeFileName(choice.name || r.title), 'wav');
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.writeFileSync(dest, bytes);
+      return { item: await addDownloaded(r, { url: r.pageUrl, quality: r.quality }, choice, library, dest) };
     } catch (err) {
       return { error: err.message };
     }
@@ -751,6 +776,7 @@ app.whenReady().then(() => {
         detail: `Le dossier ${settings.get().libraryPath} est inaccessible (disque débranché ?).\n\nLa bibliothèque par défaut est ouverte à la place. Rebranche le disque puis relance FoleyBox pour retrouver tes sons.`,
       });
     }
+    setToolsDir(path.join(app.getPath('userData'), 'outils'));
     synth = createSynth();
     if (taggerAvailable()) {
       soundClasses = readClasses();

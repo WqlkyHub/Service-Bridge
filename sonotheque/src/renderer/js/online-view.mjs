@@ -8,6 +8,7 @@ import { icon } from './icons.mjs';
 import { attachTooltip, hideTooltip } from './tooltip.mjs';
 import { addDialog, defaultChoice, settingsDialog } from './dialogs.mjs';
 import { toast } from './toast.mjs';
+import { encodeWav } from './cut-dialog.mjs';
 import { translateQuery } from '../../shared/synonyms.mjs';
 import { allowedCommercially } from '../../shared/licenses.mjs';
 
@@ -404,7 +405,16 @@ export class OnlineView {
   async download(r, choice) {
     this.downloads.set(r.key, { received: 0, total: 0 });
     this.refreshKey(r.key);
-    const res = await sono.online.download({ key: r.key, ...choice });
+    let res = await sono.online.download({ key: r.key, ...choice });
+    if (res.convert) {
+      // Piste audio à convertir (YouTube) : on la décode ici et on la renvoie en WAV.
+      try {
+        const audio = await new OfflineAudioContext(2, 1, 44100).decodeAudioData(res.convert.buffer.slice(res.convert.byteOffset, res.convert.byteOffset + res.convert.byteLength));
+        res = await sono.online.saveWav({ key: r.key, bytes: encodeWav(audio, 0, audio.length), ...choice });
+      } catch {
+        res = { error: 'la piste audio reçue est illisible.' };
+      }
+    }
     this.downloads.delete(r.key);
     if (res.error) {
       toast(`Échec de l'ajout : ${res.error}`, 'error', 6000);

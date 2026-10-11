@@ -36,6 +36,7 @@ contextBridge.exposeInMainWorld('sono', {
     search: (params) => ipcRenderer.invoke('online:search', params),
     resolve: (key) => ipcRenderer.invoke('online:resolve', key),
     download: (params) => ipcRenderer.invoke('online:download', params),
+    saveWav: (params) => ipcRenderer.invoke('online:saveWav', params),
     onProgress: (fn) => on('download:progress', fn),
   },
 

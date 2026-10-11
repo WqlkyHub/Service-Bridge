@@ -89,7 +89,11 @@ export async function downloadToLibrary(result, plan, choice, library, { onProgr
   const dir = library.folderFor(result.kind, choice.category);
   const base = safeFileName(choice.name || result.title);
   const dest = await fetchToFile(plan.url, dir, base, { headers: plan.headers, ext: plan.ext, onProgress, signal });
+  return addDownloaded(result, plan, choice, library, dest);
+}
 
+/** Vérifie un fichier déjà rangé dans la bibliothèque et l'y inscrit avec sa provenance. */
+export async function addDownloaded(result, plan, choice, library, dest) {
   let info;
   try {
     info = await readAudioInfo(dest);

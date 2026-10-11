@@ -2,3 +2,4 @@ node_modules/
 dist/
 src/ia/modele/
 *.log
+pub/*.mp4

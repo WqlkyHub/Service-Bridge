@@ -21,7 +21,7 @@ export function defaultSettings(defaultLibraryPath) {
     translateOnline: true,
     autoTags: true, // mots-clés automatiques par reconnaissance des sons
     volume: 0.8,
-    sources: { freesound: true, openverse: true, jamendo: true, archive: true, bbc: true },
+    sources: { freesound: true, openverse: true, jamendo: true, archive: true, bbc: true, youtube: true },
     freesound: { apiKey: '', clientId: '', oauth: null },
     jamendo: { clientId: '' },
   };

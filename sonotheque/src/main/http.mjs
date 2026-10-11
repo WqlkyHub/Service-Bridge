@@ -4,7 +4,7 @@
 
 let fetchImpl = globalThis.fetch;
 
-export const USER_AGENT = 'FoleyBox/0.4 (banque de sons pour le montage video)';
+export const USER_AGENT = 'FoleyBox/0.5 (banque de sons pour le montage video)';
 
 export function setFetch(fn) {
   fetchImpl = fn;
